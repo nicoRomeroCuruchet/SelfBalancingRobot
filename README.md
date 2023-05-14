@@ -12,16 +12,20 @@ This project contains the code to simulate a Self Balancing Robot in ROS using t
 
 # Velocity and IMU topic
 
+- Change velocity:
+
       rostopic pub /cmd_vel geometry_msgs/Twist "linear:
-        x: 0.0
+        x: 1.0
         y: 0.0
         z: 0.0
       angular:
         x: 0.0
         y: 0.0
-        z: 0.5" -r 10
+        z: 0.0" -r 10
         
-     rostopic echo /imu
+- Read IMU:
+
+        rostopic echo /imu
         
 # Dependencies
 This project depends on the following packages:
