@@ -32,5 +32,3 @@ This project depends on the following packages:
 
 - ROS Noetic
 - Gazebo 11
-- joint_state_publisher
-- robot_state_publisher
