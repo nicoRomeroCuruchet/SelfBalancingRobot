@@ -1,0 +1,242 @@
+<?xml version="1.0"?>
+<robot name="balancing" xmlns:xacro="http://ros.org/wiki/xacro">
+ 
+<!-- Robot shape -->
+<xacro:property name="W_weight" value="0.05"/>
+<xacro:property name="W_l" value="0.027"/>
+<xacro:property name="W_diam" value="0.065"/>
+ 
+<xacro:property name="base_w" value="0.15"/>
+<xacro:property name="base_h" value="0.2"/>
+<xacro:property name="base_l" value=".04"/>
+<xacro:property name="base_weight" value="0.2"/>
+ 
+<xacro:property name="battery_w" value="0.09"/>
+<xacro:property name="battery_h" value="0.03"/>
+<xacro:property name="battery_l" value=".04"/>
+<xacro:property name="battery_weight" value="0.15"/>
+ 
+<xacro:property name="Mot_l" value="0.07"/>
+<xacro:property name="Mot_diam" value="0.025"/>
+<xacro:property name="Mot_weight" value="0.1"/>
+ 
+<!-- IMU -->
+<xacro:property name="noise" value="0.0"/>
+ 
+<!-- DIFFERENTIAL DRIVE -->
+<xacro:property name="update_rate" value="20"/>
+<xacro:property name="torque" value="20"/> 
+ 
+ 
+<!-- WHEEL -->
+  <xacro:macro name="wheel" params="side parent x y z">
+    <joint name="wheel_${side}_joint" type="continuous">
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0" />
+      <parent link="${parent}"/>
+      <child link="wheel_${side}_link" />
+      <axis xyz="0 1 0"/>
+    </joint>
+ 
+    <link name="wheel_${side}_link">
+      <inertial>
+        <mass value="${W_weight}" />
+        <origin xyz="0 0 0" rpy="1.57075 0 0" />
+        <inertia ixx="${(W_l * W_l + W_diam * W_diam) * W_weight /12.0}" ixy="0.0" ixz="0.0"
+          iyy="${(W_l * W_l + W_diam * W_diam) * W_weight /12.0}" iyz="0.0"
+          izz="${W_weight/8.0 * W_diam * W_diam}" />
+      </inertial>
+ 
+      <visual>
+        <origin xyz="0 0 0" rpy="1.57075 0 0" />
+        <geometry>
+             <cylinder length="${W_l}" radius="${W_diam/2}"/>
+        </geometry>
+      </visual>
+ 
+      <collision>
+        <origin xyz="0 0 0" rpy="1.57075 0 0" />
+        <geometry>
+          <cylinder length="${W_l}" radius="${W_diam/2}"/>
+        </geometry>
+      </collision>
+    </link>
+ 
+  <gazebo reference="wheel_${side}_link">
+    <mu1>0.7</mu1>
+    <mu2>0.7</mu2>
+    <kp>10000</kp>
+    <kd>10000</kd>
+    <material>Gazebo/Black</material>
+  </gazebo>
+  </xacro:macro>
+ 
+  
+<!-- MOTOR -->
+  <xacro:macro name="motor" params="side parent x y z">
+    <joint name="motor_${side}_joint" type="fixed">
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0" />
+      <parent link="${parent}"/>
+      <child link="motor_${side}_link" />
+    </joint>
+ 
+    <link name="motor_${side}_link">
+      <inertial>
+        <mass value="${Mot_weight}" />
+        <origin xyz="0 0 0" rpy="1.57075 0 0" />
+        <inertia ixx="${(Mot_l * Mot_l + Mot_diam * Mot_diam) * Mot_weight /12.0}" ixy="0.0" ixz="0.0"
+          iyy="${(Mot_l * Mot_l + Mot_diam * Mot_diam) * Mot_weight /12.0}" iyz="0.0"
+          izz="${Mot_weight/8.0 * Mot_diam * Mot_diam}" />
+      </inertial>
+ 
+ 
+      <visual>
+        <origin xyz="0 0 0" rpy="1.57075 0 0" />
+        <geometry>
+          <cylinder length="${Mot_l}" radius="${Mot_diam/2}"/>
+        </geometry>
+      </visual>
+ 
+      <collision>
+        <origin xyz="0 0 0" rpy="1.57075 0 0" />
+        <geometry>
+          <cylinder length="${  Mot_l}" radius="${Mot_diam/2}"/>
+        </geometry>
+      </collision>
+    </link>
+ 
+  <gazebo reference="motor_${side}_link">
+    <mu1>0.7</mu1>
+    <mu2>0.7</mu2>
+    <kp>10000</kp>
+    <kd>10000</kd>
+    <material>Gazebo/Gray</material>
+  </gazebo>
+  </xacro:macro>
+ 
+  <xacro:macro name="battery" params="parent x y z">
+    <link name="battery_link">
+ 
+      <inertial>
+        <mass value="${battery_weight}" />
+        <origin xyz="0 0 0.0" />
+        <inertia ixx="${(battery_w * battery_w + battery_h * battery_h) * battery_weight /12.0}" ixy="0.0" ixz="0.0"
+          iyy="${(battery_h * battery_h + battery_l * battery_l) * battery_weight /12.0}" iyz="0.0"
+          izz="${(battery_w * battery_w + battery_l * battery_l) * battery_weight /12.0}" />
+      </inertial>
+ 
+      <visual>
+        <origin xyz="0 0 0" />
+        <geometry>
+             <box size="${battery_l} ${battery_w} ${battery_h}"/>
+        </geometry>
+      </visual>
+ 
+      <collision>
+        <origin xyz="0 0 0" />
+        <geometry>
+             <box size="${battery_l} ${battery_w} ${battery_h}"/>
+        </geometry>
+      </collision>
+    </link>
+ 
+  <gazebo reference="battery_link">
+    <mu1>0.3</mu1>
+    <mu2>0.3</mu2>
+    <kp>10000</kp>
+    <kd>10000</kd>
+    <material>Gazebo/Green</material>
+  </gazebo>
+ 
+    <joint name="battery_joint" type="fixed">
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0" />
+      <parent link="${parent}"/>
+      <child link="battery_link" />
+    </joint>
+  </xacro:macro>
+ 
+ 
+ 
+    <link name="base_link">
+ 
+      <inertial>
+        <mass value="${base_weight}" />
+        <origin xyz="0 0 0" />
+        <inertia ixx="${(base_w * base_w + base_h * base_h) * base_weight /12.0}" ixy="0.0" ixz="0.0"
+          iyy="${(base_h * base_h + base_l * base_l) * base_weight /12.0}" iyz="0.0"
+          izz="${(base_w * base_w + base_l * base_l) * base_weight /12.0}" />
+      </inertial>
+ 
+ 
+      <visual>
+        <origin xyz="0 0 0" />
+        <geometry>
+             <box size="${base_l} ${base_w} ${base_h}"/>
+        </geometry>
+      </visual>
+ 
+      <collision>
+        <origin xyz="0 0 0" />
+        <geometry>
+             <box size="${base_l} ${base_w} ${base_h}"/>
+        </geometry>
+      </collision>
+    </link>
+ 
+  <gazebo reference="base_link">
+    <mu1>0.3</mu1>
+    <mu2>0.3</mu2>
+    <kp>10000</kp>
+    <kd>10000</kd>
+    <material>Gazebo/White</material>
+  </gazebo>
+ 
+   
+   <xacro:motor parent="base_link" side="dx" x="0" y="0.04" z="-${(base_h+Mot_diam)/2}"/>
+   <xacro:wheel parent="motor_dx_link" side="dx" x="0" y="0.05" z="0"/>
+    <xacro:motor parent="base_link" side="sx" x="0" y="-0.04" z="-${(base_h+Mot_diam)/2}"/>
+    <xacro:wheel parent="motor_sx_link" side="sx" x="0" y="-0.05" z="0"/>
+    <xacro:battery parent="base_link" x="0" y="0" z="${(base_h + battery_h)/2}"/>
+ 
+ 
+ 
+<!--  SENSORS -->
+  <gazebo>
+    <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
+      <alwaysOn>true</alwaysOn>
+      <bodyName>base_link</bodyName>
+      <topicName>imu</topicName>
+      <serviceName>imu_service</serviceName>
+      <gaussianNoise>${noise}</gaussianNoise>
+      <updateRate>20.0</updateRate>
+    </plugin>
+  </gazebo> 
+ 
+ 
+<!-- DIFFERENTIAL DRIVE -->
+<gazebo>
+  <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+    <legacyMode>false</legacyMode>
+    <alwaysOn>true</alwaysOn>
+    <updateRate>${update_rate}</updateRate>
+    <leftJoint>wheel_dx_joint</leftJoint>
+    <rightJoint>wheel_sx_joint</rightJoint>
+    <wheelSeparation>0.2</wheelSeparation>
+    <wheelDiameter>${W_diam}</wheelDiameter>
+    <torque>${torque}</torque>
+    <commandTopic>cmd_vel</commandTopic>
+    <odometryTopic>odom</odometryTopic>
+    <odometryFrame>odom</odometryFrame>
+    <robotBaseFrame>base_link</robotBaseFrame>
+ 
+    <wheelTorque>${torque}</wheelTorque> 
+    <wheelAcceleration>20</wheelAcceleration>
+    <publishWheelJointState>true</publishWheelJointState>
+    <publishOdomTF>true</publishOdomTF>
+    <publishWheelTF>true</publishWheelTF>
+ 
+ 
+  </plugin>
+</gazebo>
+ 
+ 
+</robot>

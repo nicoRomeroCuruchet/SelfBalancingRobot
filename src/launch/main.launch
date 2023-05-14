@@ -1,0 +1,16 @@
+<launch>
+
+	<include file="$(find gazebo_ros)/launch/empty_world.launch"/>
+		
+	<arg name = "x" default ="0.0"/>
+	<arg name = "y" default ="0.0"/>
+	<arg name = "z" default ="0.0"/>
+	<arg name = "robot_name" default = ""/>
+	<param name = "robot_description" command = "cat $(find self_balancing_robot)/urdf/robot.urdf"/>
+	<node name ="urdf_spawner" 
+	      pkg ="gazebo_ros" 
+	      type ="spawn_model"
+	      args="-file $(find self_balancing_robot)/urdf/robot.urdf -urdf -model self_balancing_robot"
+	      output ="screen"/>
+	
+</launch>
