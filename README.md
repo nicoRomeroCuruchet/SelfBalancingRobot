@@ -12,6 +12,8 @@ This project depends on the following packages:
 
 # Setup 
 
-      mkdir catkin_ws
-      git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
-      catkin_make
+      - mkdir catkin_ws && cd catkin_ws
+      - git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+      - catkin_make
+      - roslaunch self_balancing_robot main.launch
+
