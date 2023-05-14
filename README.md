@@ -4,10 +4,10 @@ This project contains the code to simulate a Self Balancing Robot in ROS using t
 
 # Setup 
 
-      - mkdir catkin_ws && cd catkin_ws
-      - git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
-      - catkin_make
-      - roslaunch self_balancing_robot main.launch
+      mkdir catkin_ws && cd catkin_ws
+      git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+      catkin_make
+      roslaunch self_balancing_robot main.launch
 
 
 # Velocity and IMU topic
