@@ -9,3 +9,9 @@ This project depends on the following packages:
 - Gazebo 11
 - joint_state_publisher
 - robot_state_publisher
+
+# Setup 
+
+      mkdir catkin_ws
+      git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+      catkin_make
