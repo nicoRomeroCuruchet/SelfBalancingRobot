@@ -14,7 +14,7 @@ This project contains the code to simulate a Self Balancing Robot in ROS using t
 
 - Change velocity:
 
-      rostopic pub /cmd_vel geometry_msgs/Twist "linear:
+      rostopic pub self_balancing_robot/cmd_vel geometry_msgs/Twist "linear:
         x: 1.0
         y: 0.0
         z: 0.0
