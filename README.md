@@ -22,6 +22,11 @@ This project aims to develop a simulated self-balancing robot using ROS (Robot O
       roslaunch self_balancing_robot main.launch
 
 
+# Getting Started
+Once the project is set up, you can launch the simulation environment and run the control algorithms to observe the robot's self-balancing behavior.
+      
+      python3 main.py
+
 # Velocity and IMU topic
 
 - Change velocity:
