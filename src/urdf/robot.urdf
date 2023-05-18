@@ -16,12 +16,12 @@
         <box size="0.04 0.15 0.2"/>
       </geometry>
     </visual>
-    <collision>
+	<collision>
       <origin xyz="0 0 0"/>
       <geometry>
         <box size="0.04 0.15 0.2"/>
-      </geometry>
-    </collision>
+		</geometry> 
+	</collision>
   </link>
   <gazebo reference="base_link">
     <mu1>0.3</mu1>
@@ -194,16 +194,17 @@
       <bodyName>base_link</bodyName>
       <topicName>imu</topicName>
       <serviceName>imu_service</serviceName>
-      <gaussianNoise>0.0</gaussianNoise>
-      <updateRate>20.0</updateRate>
+      <gaussianNoise>0.01</gaussianNoise>
+      <updateRate>200.0</updateRate>
     </plugin>
   </gazebo>
   <!-- DIFFERENTIAL DRIVE -->
   <gazebo>
     <plugin filename="libgazebo_ros_diff_drive.so" name="differential_drive_controller">
       <legacyMode>false</legacyMode>
-      <alwaysOn>true</alwaysOn>
-      <updateRate>20</updateRate>
+	  <alwaysOn>true</alwaysOn>
+	  <max_velocity>10</max_velocity>
+      <updateRate>200</updateRate>
       <leftJoint>wheel_dx_joint</leftJoint>
       <rightJoint>wheel_sx_joint</rightJoint>
       <wheelSeparation>0.2</wheelSeparation>
@@ -216,8 +217,8 @@
       <publishTf>false</publishTf>
       <param name="odometrySource" type="int" value="2"/>
       <robotBaseFrame>base_link</robotBaseFrame>
-      <wheelTorque>20</wheelTorque>
-      <wheelAcceleration>20</wheelAcceleration>
+      <wheelTorque>4</wheelTorque>
+      <wheelAcceleration>4</wheelAcceleration>
       <publishWheelJointState>true</publishWheelJointState>
       <publishOdomTF>true</publishOdomTF>
       <publishWheelTF>true</publishWheelTF>
@@ -225,5 +226,21 @@
 
     </plugin>
   </gazebo>
+
+
+  <gazebo>
+    <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>200.0</updateRate>
+      <bodyName>base_link</bodyName>
+      <topicName>self_balancing_robot/ground_truth/state</topicName>
+      <gaussianNoise>0.01</gaussianNoise>
+      <frameName>world</frameName>
+      <xyzOffsets>0 0 0</xyzOffsets>
+      <rpyOffsets>0 0 0</rpyOffsets>
+    </plugin>
+</gazebo>
+
+
 </robot>
 
