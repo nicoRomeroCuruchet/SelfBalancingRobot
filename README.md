@@ -6,7 +6,6 @@ This project aims to develop a simulated self-balancing robot using ROS (Robot O
 
 ![Demo](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDczMTIxZGEzZTU4ZWMyMWI5M2NjY2UwMjgzZTZiNzU5NzIwMTRjNiZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/dUppFtwYS4GfFBeRvB/giphy.gif)
 
-
 # Features
 
 - Simulation Environment: Utilize Gazebo, a powerful robotics simulator, to create a virtual world for the self-balancing robot.
