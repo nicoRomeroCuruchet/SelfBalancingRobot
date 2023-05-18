@@ -27,7 +27,7 @@ Once the project is set up, run the control algorithms to observe the robot's se
       
       python3 main.py
 
-# Velocity and IMU topic
+# ROS topics: Velocity and IMU topic
 
 - Change velocity:
 
