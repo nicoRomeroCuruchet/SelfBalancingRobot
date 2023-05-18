@@ -2,7 +2,7 @@
 
 This project aims to develop a simulated self-balancing robot using ROS (Robot Operating System) and Gazebo. The goal is to implement control algorithms that enable the robot to maintain its balance in an inverted pendulum configuration.The Self Balancing Robot Simulation project focuses on tackling the challenge of stabilizing an inverted pendulum. By leveraging ROS and Gazebo, we create a realistic simulation environment to develop and test control algorithms for the robot's balance maintenance.
 
-![Demo](https://media.giphy.com/media/VpOj6hN5GWJ0BFpOUy/giphy-downsized-large.gif)
+![Demo]()
 
 
 # Features
