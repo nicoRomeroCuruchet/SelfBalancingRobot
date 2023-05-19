@@ -64,7 +64,7 @@ class PPO:
         # IMU reading. Observations. Note this is a numpy array.
         self.y_angle = np.array([0], dtype = float)
 
-        self.pub_topic_name = '/cmd_vel'
+        self.pub_topic_name = '/self_balancing_robot/cmd_vel'
         self.sub_topic_name = '/imu'
 
         self.pub = rospy.Publisher(self.pub_topic_name, Twist, queue_size=1)
@@ -73,6 +73,8 @@ class PPO:
         self.reset = rospy.ServiceProxy("/gazebo/reset_simulation",Empty)
         self.pause = rospy.ServiceProxy("/gazebo/pause_physics",Empty)
         self.unpause = rospy.ServiceProxy("/gazebo/unpause_physics",Empty)
+
+        self.delete_model_service = '/gazebo/delete_model'
 
         rospy.init_node('velpublisher', anonymous=True)
 
@@ -104,12 +106,13 @@ class PPO:
         #return self.y_angle
 
     def env_reset(self):
-        
-        # Delete the model
-        delete_model_service = '/gazebo/delete_model'
-        rospy.wait_for_service(delete_model_service)
+
+        self.unpause()
+
+        # Delete the model 
+        rospy.wait_for_service(self.delete_model_service)
         try:
-            delete_model = rospy.ServiceProxy(delete_model_service, DeleteModel)
+            delete_model = rospy.ServiceProxy(self.delete_model_service, DeleteModel)
             delete_model('self_balancing_robot')
         except rospy.ServiceException as e:
             rospy.loginfo(f"Failed to delete the model: {str(e)}")
@@ -135,24 +138,20 @@ class PPO:
             pose.orientation.w = 0
             response = spawn_model(model_name, urdf_xml, "", pose, "world")
 
-            #rospy.sleep(0.1)
-
         except rospy.ServiceException as e:
             rospy.loginfo(f"Failed to spawn the model: {str(e)}")
 
-        # Small force applied for the robot to move
-        self.apply_force_to_link('base_link', [10, 0, 0], 0.01)
-
-
-
         # Wait for a new value
-        self.y_angle = None
-        while self.y_angle is None:
+        self.y_angle = np.array([100], dtype = float)
+        while self.y_angle[0] == 100:
             try:
-                self.y_angle[0] = rospy.wait_for_message('/imu', Imu, timeout=1)
+                rospy.wait_for_message('/imu', Imu, timeout=1)
             except:
                 pass
                 
+        # Small force applied for the robot to move
+        self.apply_force_to_link('base_link', [10, 0, 0], 0.01)
+
         self.pause()
 
         return self.y_angle
@@ -183,10 +182,6 @@ class PPO:
             request.wrench.force.z = force[2]
             request.duration = rospy.Duration(duration)
             response = apply_wrench(request)
-            if response.success:
-                rospy.loginfo(f"Force applied to link '{link_name}' successfully.")
-            else:
-                rospy.logerr(f"Failed to apply force to link '{link_name}': {response.status_message}")
         except rospy.ServiceException as e:
             rospy.logerr(f"Failed to apply force to link '{link_name}': {e}")
 
@@ -221,13 +216,12 @@ class PPO:
                                                  data.orientation.z,
                                                  data.orientation.w])
 
-        print(current_state)
         self.y_angle[0] = current_state
 
 
     def _init_hyperparameters(self):
         # Default values for hyperparameters, will need to change later.
-        self.timesteps_per_batch = 4800            # timesteps per batch (Set of episodes)
+        self.timesteps_per_batch = 2400           # timesteps per batch (Set of episodes)
         self.max_timesteps_per_episode = 1600      # timesteps per episode
         self.variance_coeff = 0.5 # Variance coeff for cov.matrix
         self.gamma = 0.95 # Discount Factor
@@ -313,17 +307,6 @@ class PPO:
             # Resets and pauses the simulation.
             obs = self.env_reset()
             
-            #while True:
-                
-                #rospy.sleep(0.5)
-
-                #print("UNPAUSE PREV")
-                #self.unpause()
-                #print("UNPAUSE NEXT")
-
-            #if(type(obs) == tuple):
-            #    obs = obs[0]
-
             done = False
 
             for ep_t in range(self.max_timesteps_per_episode):
