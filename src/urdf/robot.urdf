@@ -195,7 +195,7 @@
       <topicName>imu</topicName>
       <serviceName>imu_service</serviceName>
       <gaussianNoise>0.01</gaussianNoise>
-      <updateRate>200.0</updateRate>
+      <updateRate>00</updateRate>
     </plugin>
   </gazebo>
   <!-- DIFFERENTIAL DRIVE -->
