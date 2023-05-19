@@ -109,6 +109,16 @@ class PPO:
 
         self.unpause()
 
+        # Velocity message to publish
+        self.vel=Twist()
+        self.vel.linear.y = 0
+        self.vel.linear.z = 0
+        self.vel.angular.x =0
+        self.vel.angular.y = 0
+        self.vel.angular.z = 0
+        # Publish to topic
+        self.pub.publish(self.vel)
+
         # Delete the model 
         rospy.wait_for_service(self.delete_model_service)
         try:
@@ -207,8 +217,8 @@ class PPO:
 
     def get_reward(self, obs):
         if(abs(obs[0]) > self.threshold):
-            return -100, True
-        return 1, False
+            return -100.0, True
+        return 1.0, False
 
     def callback(self, data):
         _, current_state,_ = euler_from_quaternion([data.orientation.x,
@@ -223,12 +233,12 @@ class PPO:
         # Default values for hyperparameters, will need to change later.
         self.timesteps_per_batch = 2400           # timesteps per batch (Set of episodes)
         self.max_timesteps_per_episode = 1600      # timesteps per episode
-        self.variance_coeff = 0.5 # Variance coeff for cov.matrix
-        self.gamma = 0.95 # Discount Factor
+        self.variance_coeff = 0.1 # Variance coeff for cov.matrix
+        self.gamma = 0.99 # Discount Factor
         self.epochs = 5
         self.clip = 0.2 # As recommended by the paper
         self.lr = 0.005 # Learning rate for SGD
-        self.threshold = 0.5 # Threshold for max angle of robot
+        self.threshold = 0.1 # Threshold for max angle of robot
 
     def learn(self, total_timesteps):
         t_so_far = 0
