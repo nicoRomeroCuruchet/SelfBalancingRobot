@@ -1,6 +1,18 @@
 # Self Balancing Robot
 
-This project contains the code to simulate a Self Balancing Robot in ROS using the Gazebo simulator.
+This project aims to develop a simulated self-balancing robot using ROS (Robot Operating System) and Gazebo. The goal is to implement control algorithms that enable the robot to maintain its balance in an inverted pendulum configuration.The Self Balancing Robot Simulation project focuses on tackling the challenge of stabilizing an inverted pendulum. By leveraging ROS and Gazebo, we create a realistic simulation environment to develop and test control algorithms for the robot's balance maintenance.
+
+
+
+![Demo](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDczMTIxZGEzZTU4ZWMyMWI5M2NjY2UwMjgzZTZiNzU5NzIwMTRjNiZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/dUppFtwYS4GfFBeRvB/giphy.gif)
+
+# Features
+
+- Simulation Environment: Utilize Gazebo, a powerful robotics simulator, to create a virtual world for the self-balancing robot.
+- Sensor Integration: Incorporate an IMU (Inertial Measurement Unit) to measure the inclination angle of the robot.
+- Control Algorithms: Implement various control algorithms, such as PID (Proportional-Integral-Derivative) or RL (Reinforcement Learning), to continuously adjust the        robot's movements and maintain its vertical balance.
+- Real-Time Visualization: Visualize the robot's state and control inputs in real-time using ROS tools and Gazebo's graphical interface.
+
 
 # Setup 
 
@@ -10,11 +22,16 @@ This project contains the code to simulate a Self Balancing Robot in ROS using t
       roslaunch self_balancing_robot main.launch
 
 
-# Velocity and IMU topic
+# Getting Started
+Once the project is set up, run the control algorithms to observe the robot's self-balancing behavior.
+      
+      python3 main.py
+
+# ROS topics: Velocity and IMU topic
 
 - Change velocity:
 
-      rostopic pub /cmd_vel geometry_msgs/Twist "linear:
+      rostopic pub /self_balancing_robot/cmd_vel geometry_msgs/Twist "linear:
         x: 1.0
         y: 0.0
         z: 0.0
