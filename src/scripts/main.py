@@ -1,5 +1,7 @@
 import rospy
 import math
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_util import make_vec_env
 from deep_rl import SelfBalancingRobot
 from pid_controller import PIDController
 from gazebo_msgs.srv import  ApplyBodyWrenchRequest, ApplyBodyWrench
@@ -42,7 +44,7 @@ def main():
     robot = SelfBalancingRobot()
     # ~ loop rate
     rate = rospy.Rate(200)
-    rospy.sleep(0.5)
+    rospy.sleep(0.1)
     # Controller pitch
     pid_angle    = PIDController(kp=40.0, 
                                  ki=2.5e-5, 
@@ -73,11 +75,25 @@ def main():
         # step control action
         robot.current_state, reward, done, _ = robot.step(control_output)
 
+        if done: robot.reset()
+
         rate.sleep()                # Sleep to maintain the loop rate
+
+
+import gym
+from keras import Sequential
+from keras.layers import Dense
+from keras.optimizers import Adam
 
 if __name__ == '__main__':
 
     try:
         main()
+        #env = selfbalancingRobot()
+
+        #model = PPO("MlpPolicy", env, verbose=1)
+        #model.learn(total_timesteps=10000)
+        #mean_reward, _ = model.evaluate(env, n_eval_episodes=10)
+        #print(f"Mean reward: {mean_reward:.2f} +/- {_:.2f}")
     except rospy.ROSInterruptException: 
         pass

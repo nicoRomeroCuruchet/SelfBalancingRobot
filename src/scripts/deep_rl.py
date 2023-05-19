@@ -58,6 +58,7 @@ class SelfBalancingRobot(gym.Env):
         self.imu_data          = None
         self.current_state     = None
         self.position          = None
+        self.theshold          = 0.1
         self.reset()
 
     def imu_callback(self, data):
@@ -103,7 +104,7 @@ class SelfBalancingRobot(gym.Env):
         vel.linear.x = action
         self.pub.publish(vel)
         reward = self.get_reward()
-        done = False
+        done = abs(self.current_state) > self.theshold 
         return self.current_state, reward, done, {}
 
     def reset(self):
@@ -118,7 +119,7 @@ class SelfBalancingRobot(gym.Env):
             rospy.loginfo(f"Failed to delete the model: {str(e)}")
         
         # Wait for a moment to allow Gazebo to remove the model
-        rospy.sleep(.5)
+        rospy.sleep(.1)
         # Spawn the model
         try:
             current_dir = os.path.dirname(__file__)
@@ -143,7 +144,7 @@ class SelfBalancingRobot(gym.Env):
         except rospy.ServiceException as e:
             rospy.loginfo(f"Failed to spawn the model: {str(e)}")
 
-        rospy.sleep(0.5)
+        rospy.sleep(0.1)
         self.imu_data = None
         while self.imu_data is None:
             try:
@@ -152,7 +153,7 @@ class SelfBalancingRobot(gym.Env):
             except:
                 pass
        
-        # picht 
+        # roll picht yaw
         _, self.current_state,_ = euler_from_quaternion([self.imu_data.orientation.x,
                                                          self.imu_data.orientation.y,
                                                          self.imu_data.orientation.z,
@@ -169,4 +170,9 @@ class SelfBalancingRobot(gym.Env):
         Returns:
             float: Reward value """
 
-        return -1.0 if abs(self.current_state) > error else 1.0
+        position = math.sqrt(self.position.x**2 + self.position.y**2)
+
+        return -100.0 if abs(self.current_state) > self.theshold or\
+                                position > self.theshold else 1.0
+
+
