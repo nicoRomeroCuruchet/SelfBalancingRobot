@@ -16,16 +16,28 @@ This project aims to develop a simulated self-balancing robot using ROS (Robot O
 
 # Setup 
 
+      pip install -r requirements.txt
       mkdir catkin_ws && cd catkin_ws
       git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
       catkin_make
-      roslaunch self_balancing_robot main.launch
 
 
 # Getting Started
-Once the project is set up, run the control algorithms to observe the robot's self-balancing behavior.
+Once the project is set up, launch the robot's self-balancing and the enviroment.
       
+      roslaunch self_balancing_robot main.launch
+
+To train from scratch:
+
       python3 main.py
+
+To test model:
+
+      python3 main.py --mode test --actor_model ppo_actor.pth
+
+To train with existing actor/critic models:
+
+      python3 main.py --actor_model ppo_actor.pth --critic_model ppo_critic.pth
 
 # ROS topics: Velocity and IMU topic
 
