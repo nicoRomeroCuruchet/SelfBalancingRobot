@@ -1,7 +1,11 @@
 import os
 import gym
 import math
+import time 
 import rospy
+import torch
+import numpy as np
+import torch.nn as nn
 from std_srvs.srv import Empty
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
@@ -15,50 +19,37 @@ from gazebo_msgs.srv import SetPhysicsProperties, SetModelState,\
 
 class SelfBalancingRobot(gym.Env):
 
-    """
-    Custom Gym environment for controlling an inverted pendulum model in ROS.
-
-    The environment interacts with ROS topics '/cmd_vel' and '/imu' to send
-    velocity commands and receive IMU data for the pendulum's inclination angle.
-
-    Observation Space:
-        - Type: Box
-        - Shape: (1,)
-        - Range: (-inf, inf)
-        - Description: Current inclination angle of the pendulum
-
-    Action Space:
-        - Type: Box
-        - Shape: (1,)
-        - Range: [-1, 1]
-        - Description: Linear velocity command to control the pendulum
-
-    Reward Range:
-        - Type: Tuple
-        - Values: (-inf, inf)
-        - Description: The range of possible reward values
-
-    """
-
     def __init__(self):
-
-        """ Initialize the InvertedPendulumEnv class.
-
-        Sets up the ROS node, publishers, subscribers, and defines the observation
-        and action spaces. """
 
         rospy.init_node('controller_node')
 
         self.pub               = rospy.Publisher('/self_balancing_robot/cmd_vel', Twist, queue_size=1)
         self.sub               = rospy.Subscriber('/imu', Imu, self.imu_callback)
         self.sub_ground        = rospy.Subscriber('/self_balancing_robot/ground_truth/state', Odometry, self.ground_truth_callback)
+        self.pause             = rospy.ServiceProxy("/gazebo/pause_physics",Empty)
+        self.unpause           = rospy.ServiceProxy("/gazebo/unpause_physics",Empty)
+
+        #
         self.reward_range      = (-float('inf'), float('inf'))
         self.action_space      = gym.spaces.Box(low=-10, high=10, shape=(1,), dtype=float)
         self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(1,), dtype=float)
+        #
+
+         # Velocity message to publish
+        self.vel=Twist()
+        self.vel.linear.x = 0
+        self.vel.linear.y = 0
+        self.vel.linear.z = 0
+        self.vel.angular.x =0
+        self.vel.angular.y = 0
+        self.vel.angular.z = 0
+        self.pub.publish(self.vel)
+
+        #
         self.imu_data          = None
-        self.current_state     = None
-        self.position          = None
-        self.theshold          = 0.1
+        self.current_angle     = None
+        self.current_position  = None
+        self.theshold          = 0.3
         self.reset()
 
     def imu_callback(self, data):
@@ -72,40 +63,33 @@ class SelfBalancingRobot(gym.Env):
         self.imu_data = data
 
         # roll, picht, yaw
-        _, self.current_state,_ = euler_from_quaternion([self.imu_data.orientation.x,
+        _, self.current_angle,_ = euler_from_quaternion([self.imu_data.orientation.x,
                                                          self.imu_data.orientation.y,
                                                          self.imu_data.orientation.z,
                                                          self.imu_data.orientation.w])
 
-
     def ground_truth_callback(self, msg):
         
-        # Handle received message
-        # Access the robot's state information from 'msg' object
-        self.position = msg.pose.pose.position
-        #self.orientation = msg.pose.pose.orientation
+        self.current_position = msg.pose.pose.position
 
 
     def step(self, action):
 
-        """ Perform a step in the environment.
-
-        Publishes the given action as a velocity command to the 'self_balancing_robot/cmd_vel' topic,
-        waits for a duration, computes the reward, and returns the updated state,
-        reward, done flag, and additional information.
-
-        Args:
-            action (array-like): Action to be taken
-
-        Returns:
-            tuple: Tuple containing the updated state, reward, done flag, and additional information """
-
-        vel = Twist()
-        vel.linear.x = action
+        vel=Twist()
+        vel.linear.x  = action
+        vel.linear.y  = 0
+        vel.linear.z  = 0
+        vel.angular.x = 0
+        vel.angular.y = 0
+        vel.angular.z = 0
         self.pub.publish(vel)
+
         reward = self.get_reward()
-        done = abs(self.current_state) > self.theshold 
-        return self.current_state, reward, done, {}
+        position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
+        done = abs(self.current_angle) > self.theshold
+
+
+        return  np.array([self.current_angle], dtype = float), reward, done, {}
 
     def reset(self):
         
@@ -119,7 +103,7 @@ class SelfBalancingRobot(gym.Env):
             rospy.loginfo(f"Failed to delete the model: {str(e)}")
         
         # Wait for a moment to allow Gazebo to remove the model
-        rospy.sleep(.1)
+        rospy.sleep(.2)
         # Spawn the model
         try:
             current_dir = os.path.dirname(__file__)
@@ -132,19 +116,18 @@ class SelfBalancingRobot(gym.Env):
                 urdf_xml = f.read()
 
             pose = Pose()
-            pose.position.x = 0  # Adjust the position as needed
-            pose.position.y = 0
-            pose.position.z = 0.2
-            pose.orientation.x = 0
-            pose.orientation.y = 0
-            pose.orientation.z = 0
-            pose.orientation.w = 0
+            pose.position.x     = 0  # Adjust the position as needed
+            pose.position.y     = 0
+            pose.position.z     = 0.1447948565264787
+            pose.orientation.x  = 0
+            pose.orientation.y  = 0
+            pose.orientation.z  = 0
+            pose.orientation.w  = 0
             response = spawn_model(model_name, urdf_xml, "", pose, "world")
 
         except rospy.ServiceException as e:
             rospy.loginfo(f"Failed to spawn the model: {str(e)}")
 
-        rospy.sleep(0.1)
         self.imu_data = None
         while self.imu_data is None:
             try:
@@ -154,11 +137,15 @@ class SelfBalancingRobot(gym.Env):
                 pass
        
         # roll picht yaw
-        _, self.current_state,_ = euler_from_quaternion([self.imu_data.orientation.x,
+        _, self.current_angle,_ = euler_from_quaternion([self.imu_data.orientation.x,
                                                          self.imu_data.orientation.y,
                                                          self.imu_data.orientation.z,
                                                          self.imu_data.orientation.w])
-        return self.current_state
+
+        return  np.array([self.current_angle], dtype = float)
+
+    def render(self):
+        pass
 
     def get_reward(self, error=0.10):
 
@@ -170,9 +157,8 @@ class SelfBalancingRobot(gym.Env):
         Returns:
             float: Reward value """
 
-        position = math.sqrt(self.position.x**2 + self.position.y**2)
-
-        return -100.0 if abs(self.current_state) > self.theshold or\
-                                position > self.theshold else 1.0
+        position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
+        # 
+        return -100.0 if abs(self.current_angle) > self.theshold else 1.0
 
 

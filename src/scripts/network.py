@@ -1,7 +1,8 @@
 import torch
+import numpy as np
 from torch import nn
 import torch.nn.functional as F
-import numpy as np
+
 class FeedForwardNN(nn.Module):
     
     def __init__(self, in_dim, out_dim):
