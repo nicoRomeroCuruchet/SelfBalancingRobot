@@ -23,7 +23,7 @@ This project aims to develop a simulated self-balancing robot using ROS (Robot O
 
 
 # Getting Started
-Once the project is set up, launch the robot's self-balancing and the enviroment.
+Once the project is set up, launch the robot and the enviroment.
       
       roslaunch self_balancing_robot main.launch
 
