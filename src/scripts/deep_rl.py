@@ -157,8 +157,8 @@ class SelfBalancingRobot(gym.Env):
         Returns:
             float: Reward value """
 
-        position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-        # 
+        #position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
+         
         return -100.0 if abs(self.current_angle) > self.theshold else 1.0
 
 
