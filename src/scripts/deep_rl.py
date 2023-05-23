@@ -32,7 +32,7 @@ class SelfBalancingRobot(gym.Env):
         #
         self.reward_range      = (-float('inf'), float('inf'))
         self.action_space      = gym.spaces.Box(low=-10, high=10, shape=(1,), dtype=float)
-        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(1,), dtype=float)
+        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=float)
         #
 
          # Velocity message to publish
@@ -50,6 +50,7 @@ class SelfBalancingRobot(gym.Env):
         self.current_angle     = None
         self.current_position  = None
         self.theshold          = 0.3
+        self.max_distance = 5 # radius of circle the robot is constrained to
         self.reset()
 
     def imu_callback(self, data):
@@ -84,12 +85,24 @@ class SelfBalancingRobot(gym.Env):
         vel.angular.z = 0
         self.pub.publish(vel)
 
-        reward = self.get_reward()
-        position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-        done = abs(self.current_angle) > self.theshold
+        #reward = self.get_reward()
+        done = self.is_done()
+
+        reward = 0
+        if done:
+            reward = -100
 
 
-        return  np.array([self.current_angle], dtype = float), reward, done, {}
+        return np.array([self.current_angle, self.current_position.x, self.current_position.y], dtype = float), reward, done, {}
+
+    def is_done(self):
+
+        """ Boolean function that returns True if the current episode has ended. """
+
+        max_angle_exceeded = abs(self.current_angle) > self.theshold
+        max_distance_exceeded = math.sqrt(self.current_position.x**2 + self.current_position.y**2) > self.max_distance
+        return max_angle_exceeded or max_distance_exceeded
+
 
     def reset(self):
         
@@ -142,23 +155,33 @@ class SelfBalancingRobot(gym.Env):
                                                          self.imu_data.orientation.z,
                                                          self.imu_data.orientation.w])
 
-        return  np.array([self.current_angle], dtype = float)
+
+        self.current_position = None
+        while self.current_position is None:
+            try:
+                self.current_position = rospy.wait_for_message('/self_balancing_robot/ground_truth/state', Odometry, timeout=1).pose.pose.position
+                self.step(0)
+            except:
+                pass
+    
+        return np.array([self.current_angle, self.current_position.x, self.current_position.y], dtype = float)
 
     def render(self):
         pass
 
+"""
     def get_reward(self, error=0.10):
 
-        """ Calculate the reward based on the current state.
+        Calculate the reward based on the current state.
 
         If the current state of the pendulum is outside the acceptable range,
         a negative reward is given. Otherwise, a positive reward is given.
 
         Returns:
-            float: Reward value """
+            float: Reward value
 
         #position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
          
         return -100.0 if abs(self.current_angle) > self.theshold else 1.0
 
-
+"""
