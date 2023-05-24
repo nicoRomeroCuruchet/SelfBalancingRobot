@@ -13,6 +13,7 @@ from gazebo_msgs.msg import ModelState
 from pid_controller import PIDController
 from geometry_msgs.msg import Twist, Pose
 from tf.transformations import euler_from_quaternion
+from gazebo_msgs.srv import SetPhysicsProperties
 from gazebo_msgs.srv import SetPhysicsProperties, SetModelState,\
                             SpawnModel, DeleteModel,\
                             ApplyBodyWrenchRequest, ApplyBodyWrench
@@ -24,15 +25,20 @@ class SelfBalancingRobot(gym.Env):
         rospy.init_node('controller_node')
 
         self.pub               = rospy.Publisher('/self_balancing_robot/cmd_vel', Twist, queue_size=1)
-        self.sub               = rospy.Subscriber('/imu', Imu, self.imu_callback)
+        #self.sub               = rospy.Subscriber('/imu', Imu, self.imu_callback)
         self.sub_ground        = rospy.Subscriber('/self_balancing_robot/ground_truth/state', Odometry, self.ground_truth_callback)
         self.pause             = rospy.ServiceProxy("/gazebo/pause_physics",Empty)
         self.unpause           = rospy.ServiceProxy("/gazebo/unpause_physics",Empty)
 
-        #
+
+
+        
         self.reward_range      = (-float('inf'), float('inf'))
         self.action_space      = gym.spaces.Box(low=-10, high=10, shape=(1,), dtype=float)
-        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(1,), dtype=float)
+        #self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(1,), dtype=float)
+        low_limits  = np.array([-math.pi/2 , -float('inf')], dtype=float)  # Lower limits for each element
+        high_limits = np.array([ math.pi/2,   float('inf')], dtype=float)  # Upper limits for each element
+        self.observation_space = gym.spaces.Box(low=low_limits, high=high_limits, dtype=float)
         #
 
          # Velocity message to publish
@@ -72,6 +78,11 @@ class SelfBalancingRobot(gym.Env):
         
         self.current_position = msg.pose.pose.position
 
+        self.imu_data = msg.pose.pose.orientation
+        orientation   = self.imu_data 
+        quat = [orientation.x, orientation.y, orientation.z, orientation.w]
+        _, self.current_angle, _ = euler_from_quaternion(quat)
+
 
     def step(self, action):
 
@@ -86,10 +97,9 @@ class SelfBalancingRobot(gym.Env):
 
         reward = self.get_reward()
         position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-        done = abs(self.current_angle) > self.theshold
+        done = abs(self.current_angle) > self.theshold or position > 1.0
 
-
-        return  np.array([self.current_angle], dtype = float), reward, done, {}
+        return  np.array([self.current_angle, position], dtype = float), reward, done, {}
 
     def reset(self):
         
@@ -103,7 +113,7 @@ class SelfBalancingRobot(gym.Env):
             rospy.loginfo(f"Failed to delete the model: {str(e)}")
         
         # Wait for a moment to allow Gazebo to remove the model
-        rospy.sleep(.2)
+        rospy.sleep(0.2)
         # Spawn the model
         try:
             current_dir = os.path.dirname(__file__)
@@ -128,21 +138,45 @@ class SelfBalancingRobot(gym.Env):
         except rospy.ServiceException as e:
             rospy.loginfo(f"Failed to spawn the model: {str(e)}")
 
+
+        rospy.sleep(0.1)
+
+        rospy.wait_for_service('/gazebo/reset_simulation')
+        try:
+            # Create a service proxy for the reset_simulation service
+            reset_simulation = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
+
+            # Call the service to reset the simulation
+            reset_simulation()
+            #rospy.loginfo("Simulation reset successfully.")
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Failed to reset simulation: {e}")
+
+
+
         self.imu_data = None
-        while self.imu_data is None:
+        pos = None 
+        while self.imu_data is None or pos is None:
             try:
-                self.imu_data = rospy.wait_for_message('/imu', Imu, timeout=1)
+                #self.imu_data = rospy.wait_for_message('/imu', Imu, timeout=1)
+                pos = rospy.wait_for_message('/self_balancing_robot/ground_truth/state', Odometry, timeout=1)
                 self.step(0)
             except:
                 pass
        
-        # roll picht yaw
-        _, self.current_angle,_ = euler_from_quaternion([self.imu_data.orientation.x,
-                                                         self.imu_data.orientation.y,
-                                                         self.imu_data.orientation.z,
-                                                         self.imu_data.orientation.w])
+        try:
+            # roll picht yaw
+            _, self.current_angle,_ = euler_from_quaternion([self.imu_data.orientation.x,
+                                                             self.imu_data.orientation.y,
+                                                             self.imu_data.orientation.z,
+                                                             self.imu_data.orientation.w])
+        except:
+            self.current_angle = 0.0
 
-        return  np.array([self.current_angle], dtype = float)
+
+        
+        
+        return  np.array([self.current_angle, 0], dtype = float)
 
     def render(self):
         pass
@@ -157,8 +191,5 @@ class SelfBalancingRobot(gym.Env):
         Returns:
             float: Reward value """
 
-        #position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-         
-        return -100.0 if abs(self.current_angle) > self.theshold else 1.0
-
-
+        position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
+        return -100.0 if abs(self.current_angle) > self.theshold or position > 1.0 else 1.0
