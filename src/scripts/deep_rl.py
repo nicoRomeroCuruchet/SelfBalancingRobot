@@ -18,20 +18,18 @@ from gazebo_msgs.srv import SetPhysicsProperties, SetModelState,\
                             SpawnModel, DeleteModel,\
                             ApplyBodyWrenchRequest, ApplyBodyWrench
 
+
 class SelfBalancingRobot(gym.Env):
 
     def __init__(self):
 
         rospy.init_node('controller_node')
 
-        self.pub               = rospy.Publisher('/self_balancing_robot/cmd_vel', Twist, queue_size=1)
+        self.pub               = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         #self.sub               = rospy.Subscriber('/imu', Imu, self.imu_callback)
         self.sub_ground        = rospy.Subscriber('/self_balancing_robot/ground_truth/state', Odometry, self.ground_truth_callback)
         self.pause             = rospy.ServiceProxy("/gazebo/pause_physics",Empty)
         self.unpause           = rospy.ServiceProxy("/gazebo/unpause_physics",Empty)
-
-
-
         
         self.reward_range      = (-float('inf'), float('inf'))
         self.action_space      = gym.spaces.Box(low=-10, high=10, shape=(1,), dtype=float)
@@ -40,8 +38,7 @@ class SelfBalancingRobot(gym.Env):
         high_limits = np.array([ math.pi/2,   float('inf')], dtype=float)  # Upper limits for each element
         self.observation_space = gym.spaces.Box(low=low_limits, high=high_limits, dtype=float)
         #
-
-         # Velocity message to publish
+        # Velocity message to publish
         self.vel=Twist()
         self.vel.linear.x = 0
         self.vel.linear.y = 0
@@ -50,8 +47,8 @@ class SelfBalancingRobot(gym.Env):
         self.vel.angular.y = 0
         self.vel.angular.z = 0
         self.pub.publish(self.vel)
-
         #
+        self.module_velocity   = 0
         self.imu_data          = None
         self.current_angle     = None
         self.current_position  = None
@@ -76,6 +73,10 @@ class SelfBalancingRobot(gym.Env):
 
     def ground_truth_callback(self, msg):
         
+
+
+        self.module_velocity = msg.twist.twist.linear.x**2 + msg.twist.twist.linear.y**2 + msg.twist.twist.linear.z**2  
+
         self.current_position = msg.pose.pose.position
 
         self.imu_data = msg.pose.pose.orientation
@@ -103,66 +104,34 @@ class SelfBalancingRobot(gym.Env):
 
     def reset(self):
         
-        # Delete the model
-        delete_model_service = '/gazebo/delete_model'
-        rospy.wait_for_service(delete_model_service)
+        while round(self.module_velocity,2) > 0:
+            # Velocity message to publish
+            vel=Twist()
+            vel.linear.x  = 0
+            vel.linear.y  = 0
+            vel.linear.z  = 0
+            vel.angular.x = 0
+            vel.angular.y = 0
+            vel.angular.z = 0
+            self.pub.publish(vel)
+
+        rospy.sleep(0.25)
+        set_model_state = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
+        model_state = ModelState()
+        model_state.model_name = 'self_balancing_robot'
+        model_state.pose = Pose()
+        model_state.pose.position.x     = 0  # Adjust the position as needed
+        model_state.pose.position.y     = 0
+        model_state.pose.position.z     = 0.1447948565264787
+        model_state.pose.orientation.x  = 0
+        model_state.pose.orientation.y  = 0
+        model_state.pose.orientation.z  = 0
+        model_state.pose.orientation.w  = 1
+
         try:
-            delete_model = rospy.ServiceProxy(delete_model_service, DeleteModel)
-            delete_model('self_balancing_robot')
-        except rospy.ServiceException as e:
-            rospy.loginfo(f"Failed to delete the model: {str(e)}")
-        
-        # Wait for a moment to allow Gazebo to remove the model
-        rospy.sleep(0.2)
-        # Spawn the model
-        try:
-            current_dir = os.path.dirname(__file__)
-            urdf_path = os.path.join(current_dir, '../urdf/robot.urdf')
-            model_name = 'self_balancing_robot'                             # Provide a unique name for your model
-            rospy.wait_for_service('/gazebo/spawn_urdf_model')
-
-            spawn_model = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
-            with open(urdf_path, 'r') as f:
-                urdf_xml = f.read()
-
-            pose = Pose()
-            pose.position.x     = 0  # Adjust the position as needed
-            pose.position.y     = 0
-            pose.position.z     = 0.1447948565264787
-            pose.orientation.x  = 0
-            pose.orientation.y  = 0
-            pose.orientation.z  = 0
-            pose.orientation.w  = 0
-            response = spawn_model(model_name, urdf_xml, "", pose, "world")
-
-        except rospy.ServiceException as e:
-            rospy.loginfo(f"Failed to spawn the model: {str(e)}")
-
-
-        rospy.sleep(0.1)
-
-        rospy.wait_for_service('/gazebo/reset_simulation')
-        try:
-            # Create a service proxy for the reset_simulation service
-            reset_simulation = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
-
-            # Call the service to reset the simulation
-            reset_simulation()
-            #rospy.loginfo("Simulation reset successfully.")
-        except rospy.ServiceException as e:
+            set_model_state(model_state)
+        except:
             rospy.logerr(f"Failed to reset simulation: {e}")
-
-
-
-        self.imu_data = None
-        pos = None 
-        while self.imu_data is None or pos is None:
-            try:
-                #self.imu_data = rospy.wait_for_message('/imu', Imu, timeout=1)
-                pos = rospy.wait_for_message('/self_balancing_robot/ground_truth/state', Odometry, timeout=1)
-                self.step(0)
-            except:
-                pass
        
         try:
             # roll picht yaw
