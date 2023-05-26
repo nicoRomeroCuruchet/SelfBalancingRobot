@@ -19,9 +19,6 @@
     <arg name="headless" value="$(arg headless)"/>
   </include>
 
-  <!-- launch commander node -->
-  <include file="$(find commander)/launch/commander.launch"/>
-
   <!-- Load the URDF into the ROS Parameter Server -->
   <param name="robot_description" command="$(find xacro)/xacro '$(arg model)'" />
   
