@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<robot name="cart_pole" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:property name="M_PI" value="3.14159274"/>
+
+  <xacro:include filename="$(find robot_description)/urdf/base/base.urdf.xacro"/>
+  <xacro:include filename="$(find robot_description)/urdf/cart/cart.urdf.xacro"/>
+  <xacro:include filename="$(find robot_description)/urdf/pole/pole.urdf.xacro"/>
+  <xacro:include filename="$(find robot_description)/urdf/tip/tip.urdf.xacro"/>
+
+  <!-- =============== Link & Joint =============== -->
+  <!-- Base -->
+  <link name="base_footprint"/>
+  <xacro:base_v0 parent="base_footprint">
+	<origin xyz="0 0 0"/>
+  </xacro:base_v0>
+
+  <!-- Yaw_joint -->
+  <xacro:cart_v0 parent="base_link">
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<axis xyz="1 0 0"/>
+  </xacro:cart_v0>
+
+  <!-- Pitch_joint -->
+  <xacro:pole_v0 parent="cart_link">
+	<origin xyz="0 0.1 0" rpy="0 ${M_PI} 0"/>
+	<axis xyz="0 1 0"/>
+  </xacro:pole_v0> 
+
+  <xacro:tip_v0 parent="pole_link">
+    <origin xyz="0 0 -1" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </xacro:tip_v0>
+  
+  <!-- =============== Transmissions =============== -->
+  <xacro:cart_trans_v0/>
+
+  <!-- =============== Gazebo =============== -->
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so"/>
+  </gazebo>
+
+  <xacro:base_gazebo_v0/>
+  <xacro:cart_gazebo_v0/>
+  <xacro:pole_gazebo_v0/>
+  <xacro:tip_gazebo_v0/>
+
+</robot>

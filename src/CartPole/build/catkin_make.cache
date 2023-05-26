@@ -1,0 +1,2 @@
+commander:robot_control:robot_description:robot_launch
+-DCATKIN_DEVEL_PREFIX=/home/mati/tesis_final/SelfBalancingRobot/catkin_ws/SelfBalancingRobot/src/cart_pole_DQN/devel -DCMAKE_INSTALL_PREFIX=/home/mati/tesis_final/SelfBalancingRobot/catkin_ws/SelfBalancingRobot/src/cart_pole_DQN/install -G Unix Makefiles

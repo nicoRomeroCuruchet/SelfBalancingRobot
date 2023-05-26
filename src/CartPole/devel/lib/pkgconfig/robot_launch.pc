@@ -1,0 +1,8 @@
+prefix=/home/mati/tesis_final/SelfBalancingRobot/catkin_ws/SelfBalancingRobot/src/cart_pole_DQN/devel
+
+Name: robot_launch
+Description: Description of robot_launch
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

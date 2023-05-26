@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+
+  <xacro:include filename="$(find robot_description)/urdf/pole/pole.gazebo.xacro"/>
+  
+  <xacro:macro name="pole_v0" params="parent *joint_origin *joint_axis">
+	<joint name="pole_joint" type="revolute">
+	  <xacro:insert_block name="joint_origin"/>
+	  <parent link="${parent}"/>
+	  <child link="pole_link"/>
+          <limit effort="15" velocity="10" lower="-1.7" upper = "1.7"/>
+          <dynamics damping="0.00001" friction="0.01"/>
+	  <xacro:insert_block name="joint_axis"/>
+	</joint>
+
+	<link name="pole_link">
+	  <visual>
+		<geometry>
+		  <mesh filename="package://robot_description/meshes/DAE/pole/pole.dae"/>
+		</geometry>
+	  </visual>
+	  <collision>
+		<geometry>
+		  <mesh filename="package://robot_description/meshes/STL/pole/pole.stl"/>
+		</geometry>
+	  </collision>
+	  <inertial>
+		<origin xyz="0 0 -0.489554"/>
+		<mass value="0.85955"/>
+		<inertia ixx="0.07508" ixy="0" ixz="-0.0000095" iyy="0.07574" iyz="0" izz="0.0007851"/>
+	  </inertial>
+	</link>
+  </xacro:macro>
+  
+</robot>
+

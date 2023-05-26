@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find robot_description)/urdf/tip/tip.gazebo.xacro"/>
+  
+  <xacro:macro name="tip_v0" params="parent *joint_origin *joint_axis">
+	<joint name="tip_joint" type="revolute">
+	  <xacro:insert_block name="joint_origin"/>
+	  <parent link="${parent}"/>
+	  <child link="tip_link"/>
+          <limit effort="30" velocity="10" lower="-1.0" upper = "1.0"/>
+          <dynamics damping="0.005" friction="0.1"/> 
+	  <xacro:insert_block name="joint_axis"/>
+	</joint>
+
+	<link name="tip_link">
+	  <inertial>
+		<origin xyz="0 0 0"/>
+		<mass value="0.0001"/>
+		<inertia ixx="0.00000001" ixy="0" ixz="0" iyy="0.00000001" iyz="0" izz="0.00000001"/>
+	  </inertial>
+	</link>
+  </xacro:macro>
+  
+</robot>
+

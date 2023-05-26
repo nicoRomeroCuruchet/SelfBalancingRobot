@@ -1,0 +1,10 @@
+#sentry_robot  
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 200
+
+  cart_controller:
+    type    : effort_controllers/JointPositionController
+    joint   : cart_joint
+    publish_rate: 200
+    pid: {p: 30.0, i: 24, d: 2}

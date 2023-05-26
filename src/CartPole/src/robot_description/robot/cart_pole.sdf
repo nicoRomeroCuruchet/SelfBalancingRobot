@@ -1,0 +1,218 @@
+<?xml version="1.0" ?>
+<sdf version='1.7'>
+  <model name='cart_pole'>
+    <link name='base_footprint'>
+      <inertial>
+        <pose>0 0 -0.333 0 -0 0</pose>
+        <mass>88</mass>
+        <inertia>
+          <ixx>14.25</ixx>
+          <ixy>0</ixy>
+          <ixz>0.0245</ixz>
+          <iyy>78.78</iyy>
+          <iyz>0</iyz>
+          <izz>64.57</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_footprint_fixed_joint_lump__base_link_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://robot_description/meshes/STL/base/stand.stl</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode>
+              <mu>0.05</mu>
+              <mu2>0.05</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='base_footprint_fixed_joint_lump__base_link_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://robot_description/meshes/DAE/base/stand.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='cart_joint' type='prismatic'>
+      <pose relative_to='base_footprint'>0 0 0 0 -0 0</pose>
+      <parent>base_footprint</parent>
+      <child>cart_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-1</lower>
+          <upper>1</upper>
+          <effort>30</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.005</damping>
+          <friction>0.1</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='cart_link'>
+      <pose relative_to='cart_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>2.7</mass>
+        <inertia>
+          <ixx>0.005878</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01145</iyy>
+          <iyz>0</iyz>
+          <izz>0.01186</izz>
+        </inertia>
+      </inertial>
+      <collision name='cart_link_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://robot_description/meshes/STL/cart/cart.stl</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1.2</mu>
+              <mu2>1.2</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='cart_link_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://robot_description/meshes/DAE/cart/cart.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='pole_joint' type='revolute'>
+      <pose relative_to='cart_link'>0 0.1 0 3.14159 -0 3.14159</pose>
+      <parent>cart_link</parent>
+      <child>pole_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1.7</lower>
+          <upper>1.7</upper>
+          <effort>15</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>1e-05</damping>
+          <friction>0.01</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='pole_link'>
+      <pose relative_to='pole_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 -0.489554 0 -0 0</pose>
+        <mass>0.85955</mass>
+        <inertia>
+          <ixx>0.07508</ixx>
+          <ixy>0</ixy>
+          <ixz>-9.5e-06</ixz>
+          <iyy>0.07574</iyy>
+          <iyz>0</iyz>
+          <izz>0.0007851</izz>
+        </inertia>
+      </inertial>
+      <collision name='pole_link_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://robot_description/meshes/STL/pole/pole.stl</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1.2</mu>
+              <mu2>1.2</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='pole_link_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://robot_description/meshes/DAE/pole/pole.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='tip_joint' type='revolute'>
+      <pose relative_to='pole_link'>0 0 -1 0 -0 0</pose>
+      <parent>pole_link</parent>
+      <child>tip_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1</lower>
+          <upper>1</upper>
+          <effort>30</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.005</damping>
+          <friction>0.1</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='tip_link'>
+      <pose relative_to='tip_joint'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>0.0001</mass>
+        <inertia>
+          <ixx>1e-08</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1e-08</iyy>
+          <iyz>0</iyz>
+          <izz>1e-08</izz>
+        </inertia>
+      </inertial>
+      <self_collide>0</self_collide>
+    </link>
+    <static>0</static>
+    <plugin name='gazebo_ros_control' filename='libgazebo_ros_control.so'/>
+  </model>
+</sdf>
+

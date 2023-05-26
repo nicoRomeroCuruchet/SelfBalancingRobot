@@ -1,0 +1,8 @@
+prefix=/home/mati/tesis_final/SelfBalancingRobot/catkin_ws/rl_ws/devel
+
+Name: robot_control
+Description: Description of robot_control
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
