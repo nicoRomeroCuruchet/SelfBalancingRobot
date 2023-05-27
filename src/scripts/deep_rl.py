@@ -79,7 +79,7 @@ class SelfBalancingRobot(gym.Env):
         reward = self.get_reward()
         #print(reward)
         position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-        done = abs(self.current_angle) > self.theshold or position > 1.0
+        done = abs(self.current_angle) > self.theshold 
 
         return  np.array([self.current_angle], dtype = float), reward, done, {}
 
