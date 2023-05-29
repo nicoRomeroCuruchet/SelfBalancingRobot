@@ -188,16 +188,7 @@
     <child link="battery_link"/>
   </joint>
   <!--  SENSORS -->
-  <gazebo>
-    <plugin filename="libgazebo_ros_imu.so" name="imu_plugin">
-      <alwaysOn>true</alwaysOn>
-      <bodyName>base_link</bodyName>
-      <topicName>imu</topicName>
-      <serviceName>imu_service</serviceName>
-      <gaussianNoise>0.01</gaussianNoise>
-      <updateRate>200</updateRate>
-    </plugin>
-  </gazebo>
+  
   <!-- DIFFERENTIAL DRIVE -->
   <gazebo>
     <plugin filename="libgazebo_ros_diff_drive.so" name="differential_drive_controller">
@@ -210,7 +201,7 @@
       <wheelSeparation>0.2</wheelSeparation>
       <wheelDiameter>0.065</wheelDiameter>
       <torque>20</torque>
-      <commandTopic>cmd_vel</commandTopic>
+      <commandTopic>self_balancing_robot//cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
       <odometrySource>2</odometrySource>
