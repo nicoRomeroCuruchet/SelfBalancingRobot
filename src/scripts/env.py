@@ -1,34 +1,38 @@
-import os
 import gym
+import time
 import math
-import time 
 import rospy
-import torch
 import numpy as np
-import torch.nn as nn
 from std_srvs.srv import Empty
-from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
-from gazebo_msgs.msg import ModelState
-from pid_controller import PIDController
 from geometry_msgs.msg import Twist, Pose
 from tf.transformations import euler_from_quaternion
-from gazebo_msgs.srv import SetPhysicsProperties
-from gazebo_msgs.srv import SetPhysicsProperties, SetModelState,\
-                            SpawnModel, DeleteModel,\
-                            ApplyBodyWrenchRequest, ApplyBodyWrench
 
+class SelfBalancingRobot(gym.Env):
 
-class Env(gym.Env):
+    """ A reinforcement learning environment for a self-balancing robot simulation.
+
+    This class represents an environment for training and testing the control
+    of a self-balancing robot. It provides methods for taking actions, receiving
+    observations, calculating rewards, and resetting the environment.
+
+    Note:
+        This class is designed to be used with the OpenAI Gym reinforcement learning framework. """
 
     def __init__(self):
 
+        """ Initialize the SelfBalancingRobot environment. """
+
         rospy.init_node('controller_node')
 
-        self.pub                     = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        # Create the publisher to control the velocity of the robot
+        self.pub                     = rospy.Publisher('/self_balancing_robot/cmd_vel', Twist, queue_size=1)
+        # Create the subscriber to get the ground truth data
         self.sub_ground              = rospy.Subscriber('/self_balancing_robot/ground_truth/state', Odometry, self.ground_truth_callback)
+        # Create the service to reset the simulation
         self.reset_simulation_client = rospy.ServiceProxy('/gazebo/reset_simulation',Empty)
 
+        # Set the gym environment parameters
         self.reward_range      = (-float('inf'), float('inf'))
         self.action_space      = gym.spaces.Box(low=-5, high=5, shape=(1,), dtype=float)
         self.observation_space = gym.spaces.Box(low=np.array([-math.pi/2, -float('inf')]), 
@@ -45,16 +49,20 @@ class Env(gym.Env):
         self.pub.publish(self.vel)
         
         # refresh rate in ground truth
-        self.time_interval     = 0.005
-        self.current_angle     = 0
+        self.time_interval     = 0.005   # running at ~200 Hz
+        self.current_angle     = 0       # the pitch angle of the robot
         # storage callback data
-        self.angular_y         = None
+        self.angular_y         = 0
         self.imu_data          = None        
         # Angle threshold expresed in radians
         self.theshold          = 0.2
         
-
     def ground_truth_callback(self, msg):
+
+        """ Callback function for ground truth data.
+
+        Args:
+            msg (Odometry): The ground truth odometry message. """
         
         # Angular rate of the robot 
         self.angular_y        = msg.twist.twist.angular.y
@@ -69,6 +77,17 @@ class Env(gym.Env):
 
     def step(self, action):
 
+        """ Perform a simulation step in the environment.
+
+        Args:
+            action (float): The action to take.
+
+        Returns:
+            observation (numpy.ndarray): The observation of the environment.
+            reward (float): The reward obtained from the action.
+            done (bool): Whether the episode is done or not.
+            info (dict): Additional information about the step. """
+
         time1 = time.time()
 
         vel=Twist()
@@ -81,6 +100,7 @@ class Env(gym.Env):
         self.pub.publish(vel)
 
         # Check if time interval has passed
+        # the ground truth is published at 200 Hz. Check it in the robot.urdf file, in the sensors section.
         interval = time.time() - time1
         if(interval < self.time_interval):
             time.sleep(self.time_interval - interval)
@@ -95,6 +115,11 @@ class Env(gym.Env):
 
     def reset(self):
 
+        """ Reset the environment.
+
+        Returns:
+            observation (numpy.ndarray): The initial observation of the environment. """
+
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
 
@@ -105,7 +130,13 @@ class Env(gym.Env):
     def render(self):
         pass
 
-
     def get_reward(self):
+
+        """
+        Calculate the reward based on the current_angle of the robot.
+
+        Returns:
+            reward (float): The reward value based on the current angle.
+        """
 
         return -200.0 if abs(self.current_angle) > self.theshold  else  2 - abs(self.current_angle) * 10

@@ -1,4 +1,3 @@
-import gym
 import sys
 import torch
 from ppo import PPO
