@@ -31,9 +31,10 @@ class SelfBalancingRobot(gym.Env):
 
         self.reward_range      = (-float('inf'), float('inf'))
         self.action_space      = gym.spaces.Box(low=-5, high=5, shape=(1,), dtype=float)
-        self.observation_space = gym.spaces.Box(low=-math.pi/2, high=math.pi/2, dtype=float)
-        #
-        # Velocity message to publish
+        self.observation_space = gym.spaces.Box(low=np.array([-math.pi/2, -float('inf')]), 
+                                                high=np.array([math.pi/2,  float('inf')]), dtype=float)
+        
+        # Create the environment and stop de the robot
         self.vel=Twist()
         self.vel.linear.x = 0
         self.vel.linear.y = 0
@@ -42,27 +43,29 @@ class SelfBalancingRobot(gym.Env):
         self.vel.angular.y = 0
         self.vel.angular.z = 0
         self.pub.publish(self.vel)
-        #
+        
+        # refresh rate in ground truth
         self.time_interval     = 0.005
-        self.module_velocity   = 0
-        self.module_angular    = 0
-        self.imu_data          = None
-        self.current_angle     = None
-        self.current_position  = None
+        self.current_angle     = 0
+        # storage callback data
+        self.angular_y         = None
+        self.imu_data          = None        
+        # Angle threshold expresed in radians
         self.theshold          = 0.2
         
 
     def ground_truth_callback(self, msg):
         
-        self.module_angular   = msg.twist.twist.angular.x**2 + msg.twist.twist.angular.y**2 + msg.twist.twist.angular.z**2
-        self.module_velocity  = msg.twist.twist.linear.x**2  + msg.twist.twist.linear.y**2  + msg.twist.twist.linear.z**2  
-        self.current_position = msg.pose.pose.position
+        # Angular rate of the robot 
+        self.angular_y        = msg.twist.twist.angular.y
+        # quaternion to euler
         self.imu_data         = msg.pose.pose.orientation
-        orientation           = self.imu_data 
-
-        quat = [orientation.x, orientation.y, orientation.z, orientation.w]
-        _, self.current_angle, _ = euler_from_quaternion(quat)
-
+        q                     = self.imu_data 
+        # roll pitch yaw
+        _, self.current_angle, _ = euler_from_quaternion([q.x, 
+                                                          q.y, 
+                                                          q.z, 
+                                                          q.w])
 
     def step(self, action):
 
@@ -77,48 +80,32 @@ class SelfBalancingRobot(gym.Env):
         vel.angular.z = 0
         self.pub.publish(vel)
 
-        reward = self.get_reward()
-        #position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-        done = abs(self.current_angle) > self.theshold 
-
-        if done:
-            vel.linear.x  = 0
-            self.pub.publish(vel)
-
         # Check if time interval has passed
         interval = time.time() - time1
         if(interval < self.time_interval):
             time.sleep(self.time_interval - interval)
 
-        return  np.array([self.current_angle], dtype=float), reward, done, {}
+        reward = self.get_reward()
+        done = abs(self.current_angle) > self.theshold 
+        if done:
+            vel.linear.x  = 0
+            self.pub.publish(vel)
+
+        return  np.array([self.current_angle, self.angular_y], dtype=float), reward, done, {}
 
     def reset(self):
 
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
 
-        #print('antes',self.module_velocity)
-        #self.callback = True
-        #while self.callback or (round(self.module_velocity, 3) > 0) or (round(self.module_angular, 3) > 0):
-        #    pass
-        #print('despues',self.module_velocity)
-
         self.current_angle = 0 
-        return  np.array([self.current_angle], dtype=float)
+        self.angular_y     = 0
+        return  np.array([self.current_angle, self.angular_y], dtype=float)
 
     def render(self):
         pass
 
 
-    def get_reward(self, error=0.10):
+    def get_reward(self):
 
-        """ Calculate the reward based on the current state.
-
-        If the current state of the pendulum is outside the acceptable range,
-        a negative reward is given. Otherwise, a positive reward is given.
-
-        Returns:
-            float: Reward value """
-
-        #position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-        return -200.0 if abs(self.current_angle) > self.theshold else  2 - abs(self.current_angle) * 10
+        return -200.0 if abs(self.current_angle) > self.theshold  else  2 - abs(self.current_angle) * 10
