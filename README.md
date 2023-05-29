@@ -9,8 +9,7 @@ This project aims to develop a simulated self-balancing robot using ROS (Robot O
 # Features
 
 - Simulation Environment: Utilize Gazebo, a powerful robotics simulator, to create a virtual world for the self-balancing robot.
-- Sensor Integration: Incorporate an IMU (Inertial Measurement Unit) to measure the inclination angle of the robot.
-- Control Algorithms: Implement various control algorithms, such as PID (Proportional-Integral-Derivative) or RL (Reinforcement Learning), to continuously adjust the        robot's movements and maintain its vertical balance.
+- Control Algorithms: Implement various control algorithms, such as PID (Proportional-Integral-Derivative) or RL (Reinforcement Learning), to continuously adjust the        robot's movements and maintain its vertical balance.import gym
 - Real-Time Visualization: Visualize the robot's state and control inputs in real-time using ROS tools and Gazebo's graphical interface.
 
 
@@ -24,7 +23,7 @@ This project aims to develop a simulated self-balancing robot using ROS (Robot O
 
 # Getting Started
 Once the project is set up, launch the robot and the enviroment.
-      
+      import gym
       roslaunch self_balancing_robot main.launch
 
 To train from scratch:
@@ -51,11 +50,7 @@ To train with existing actor/critic models:
         x: 0.0
         y: 0.0
         z: 0.0" -r 10
-        
-- Read IMU:
-
-        rostopic echo /imu
-        
+             
 # Dependencies
 This project depends on the following packages:
 
