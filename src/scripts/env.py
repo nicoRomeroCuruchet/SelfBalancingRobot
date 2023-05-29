@@ -19,7 +19,7 @@ from gazebo_msgs.srv import SetPhysicsProperties, SetModelState,\
                             ApplyBodyWrenchRequest, ApplyBodyWrench
 
 
-class SelfBalancingRobot(gym.Env):
+class Env(gym.Env):
 
     def __init__(self):
 
