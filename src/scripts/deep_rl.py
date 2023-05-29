@@ -30,7 +30,7 @@ class SelfBalancingRobot(gym.Env):
         self.reset_simulation_client = rospy.ServiceProxy('/gazebo/reset_simulation',Empty)
 
         self.reward_range      = (-float('inf'), float('inf'))
-        self.action_space      = gym.spaces.Box(low=-10, high=10, shape=(1,), dtype=float)
+        self.action_space      = gym.spaces.Box(low=-5, high=5, shape=(1,), dtype=float)
         self.observation_space = gym.spaces.Box(low=-math.pi/2, high=math.pi/2, dtype=float)
         #
         # Velocity message to publish
@@ -49,7 +49,7 @@ class SelfBalancingRobot(gym.Env):
         self.imu_data          = None
         self.current_angle     = None
         self.current_position  = None
-        self.theshold          = 0.3
+        self.theshold          = 0.2
         
 
     def ground_truth_callback(self, msg):
@@ -78,16 +78,11 @@ class SelfBalancingRobot(gym.Env):
         self.pub.publish(vel)
 
         reward = self.get_reward()
-        position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
+        #position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
         done = abs(self.current_angle) > self.theshold 
 
         if done:
             vel.linear.x  = 0
-            vel.linear.y  = 0
-            vel.linear.z  = 0
-            vel.angular.x = 0
-            vel.angular.y = 0
-            vel.angular.z = 0
             self.pub.publish(vel)
 
         # Check if time interval has passed
@@ -95,7 +90,7 @@ class SelfBalancingRobot(gym.Env):
         if(interval < self.time_interval):
             time.sleep(self.time_interval - interval)
 
-        return  np.array([self.current_angle], dtype = float), reward, done, {}
+        return  np.array([self.current_angle], dtype=float), reward, done, {}
 
     def reset(self):
 
@@ -109,7 +104,7 @@ class SelfBalancingRobot(gym.Env):
         #print('despues',self.module_velocity)
 
         self.current_angle = 0 
-        return  np.array([self.current_angle], dtype = float)
+        return  np.array([self.current_angle], dtype=float)
 
     def render(self):
         pass
@@ -126,4 +121,4 @@ class SelfBalancingRobot(gym.Env):
             float: Reward value """
 
         #position = math.sqrt(self.current_position.x**2 + self.current_position.y**2)
-        return -100.0 if abs(self.current_angle) > self.theshold else 1.0
+        return -200.0 if abs(self.current_angle) > self.theshold else  2 - abs(self.current_angle) * 10
