@@ -1,19 +1,6 @@
 # Self Balancing Robot
 
-The quadratic formula is given by:
-
-$ax^2 + bx + c = 0$
-
-where $a$, $b$, and $c$ are coefficients.
-
-The solutions to the equation are:
-
-$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$
-
-
 This project aims to develop a simulated self-balancing robot using ROS (Robot Operating System) and Gazebo. The goal is to implement control algorithms that enable the robot to maintain its balance in an inverted pendulum configuration.The Self Balancing Robot Simulation project focuses on tackling the challenge of stabilizing an inverted pendulum. By leveraging ROS and Gazebo, we create a realistic simulation environment to develop and test control algorithms for the robot's balance maintenance.
-
-
 
 ![Demo](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDczMTIxZGEzZTU4ZWMyMWI5M2NjY2UwMjgzZTZiNzU5NzIwMTRjNiZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/dUppFtwYS4GfFBeRvB/giphy.gif)
 
