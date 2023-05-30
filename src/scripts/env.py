@@ -55,7 +55,7 @@ class SelfBalancingRobot(gym.Env):
         self.angular_y         = 0
         self.imu_data          = None        
         # Angle threshold expresed in radians
-        self.theshold          = 0.2
+        self.theshold          = 0.05
         
     def ground_truth_callback(self, msg):
 
@@ -113,6 +113,7 @@ class SelfBalancingRobot(gym.Env):
 
         return  np.array([self.current_angle, self.angular_y], dtype=float), reward, done, {}
 
+
     def reset(self):
 
         """ Reset the environment.
@@ -139,4 +140,4 @@ class SelfBalancingRobot(gym.Env):
             reward (float): The reward value based on the current angle.
         """
 
-        return -200.0 if abs(self.current_angle) > self.theshold  else  2 - abs(self.current_angle) * 10
+        return -200.0 if abs(self.current_angle) > self.theshold  else  0.05 - abs(self.current_angle) * 10
