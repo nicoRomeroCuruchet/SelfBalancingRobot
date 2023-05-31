@@ -59,7 +59,7 @@ class SelfBalancingRobot(gym.Env):
         self.velocity_y = None
         # Angle thresholds angle expresed in radians and position in meters
         self.threshold_angle     = 0.2
-        self.threshold_position  = 1.0
+        self.threshold_position  = 0.1
         
     def ground_truth_callback(self, msg):
 
@@ -169,6 +169,6 @@ class SelfBalancingRobot(gym.Env):
 
         angle_correction    =  2.0 - abs(self.current_angle) * 10
         position_correction = -(abs(self.position_x) + abs(self.position_y))*0.3
-        velocity_correction = -(abs(self.velocity_x) + abs(self.velocity_y))*0.3
+        velocity_correction = -(abs(self.velocity_x) + abs(self.velocity_y))
 
         return -200.0 if done else angle_correction + position_correction + velocity_correction
