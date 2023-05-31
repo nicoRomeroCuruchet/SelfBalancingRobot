@@ -57,8 +57,9 @@ class SelfBalancingRobot(gym.Env):
         self.position_y = None
         self.velocity_x = None
         self.velocity_y = None
-        # Angle threshold expresed in radians
-        self.theshold          = 0.3
+        # Angle thresholds angle expresed in radians and position in meters
+        self.threshold_angle     = 0.2
+        self.threshold_position  = 1.0
         
     def ground_truth_callback(self, msg):
 
@@ -115,15 +116,19 @@ class SelfBalancingRobot(gym.Env):
             time.sleep(self.time_interval - interval)
 
         reward = self.get_reward()
-        done = abs(self.current_angle) > self.theshold or abs(self.position_x) > 1 or abs(self.position_y) > 1 
+
+        done = abs(self.current_angle) > self.threshold_angle or\
+               abs(self.position_x) > self.threshold_position or\
+               abs(self.position_y) > self.threshold_position 
+
         if done:
             vel.linear.x  = 0
             self.pub.publish(vel)
 
+        # environment observation
         return  np.array([self.current_angle, self.angular_y,
-                          self.position_x, self.position_y,
-                          self.velocity_x, self.velocity_y ], dtype=float), reward, done, {}
-
+                          self.position_x,    self.position_y,
+                          self.velocity_x,    self.velocity_y], dtype=float), reward, done, {}
 
     def reset(self):
 
@@ -158,10 +163,12 @@ class SelfBalancingRobot(gym.Env):
             reward (float): The reward value based on the current angle.
         """
         # 
-        done = abs(self.current_angle) > self.theshold or abs(self.position_x) > 1 or abs(self.position_y) > 1
+        done = abs(self.current_angle) > self.threshold_angle or\
+               abs(self.position_x)    > self.threshold_position or\
+               abs(self.position_y)    > self.threshold_position 
 
-        angle_correction    =  3.0 - abs(self.current_angle) * 10
+        angle_correction    =  2.0 - abs(self.current_angle) * 10
         position_correction = -(abs(self.position_x) + abs(self.position_y))*0.3
-        velocity_correction = -(abs(self.velocity_x + abs(self.velocity_y)))*0.3
+        velocity_correction = -(abs(self.velocity_x) + abs(self.velocity_y))*0.3
 
         return -200.0 if done else angle_correction + position_correction + velocity_correction
