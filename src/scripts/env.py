@@ -1,12 +1,12 @@
-import gym
+import gymnasium as gym
 import time
 import math
 import rospy
 import numpy as np
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from std_srvs.srv import Empty
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, Pose
-from tf.transformations import euler_from_quaternion
 
 class SelfBalancingRobot(gym.Env):
 
@@ -19,7 +19,7 @@ class SelfBalancingRobot(gym.Env):
     Note:
         This class is designed to be used with the OpenAI Gym reinforcement learning framework. """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         """ Initialize the SelfBalancingRobot environment. """
 
@@ -58,8 +58,13 @@ class SelfBalancingRobot(gym.Env):
         self.velocity_x = None
         self.velocity_y = None
         # Angle thresholds angle expresed in radians and position in meters
-        self.threshold_angle     = 0.2
+        self.threshold_angle     = 0.4
         self.threshold_position  = 1.0
+        self.current_step        = 0
+        try:
+            self.max_steps       = max_steps
+        except:
+            self.max_steps       = float('inf')
         
     def ground_truth_callback(self, msg):
 
@@ -97,6 +102,8 @@ class SelfBalancingRobot(gym.Env):
             reward (float): The reward obtained from the action.
             done (bool): Whether the episode is done or not.
             info (dict): Additional information about the step. """
+        
+        self.current_step += 1
 
         time1 = time.time()
 
@@ -116,26 +123,27 @@ class SelfBalancingRobot(gym.Env):
             time.sleep(self.time_interval - interval)
 
         reward = self.get_reward()
-
-        done = abs(self.current_angle) > self.threshold_angle or\
-               abs(self.position_x) > self.threshold_position or\
-               abs(self.position_y) > self.threshold_position 
-
+        terminated = abs(self.current_angle) > self.threshold_angle or\
+                    abs(self.position_x) > self.threshold_position or\
+                    abs(self.position_y) > self.threshold_position 
+        truncated = self.current_step >= self.max_steps
+        done = terminated or truncated
         if done:
             vel.linear.x  = 0
             self.pub.publish(vel)
-
         # environment observation
         return  np.array([self.current_angle, self.angular_y,
                           self.position_x,    self.position_y,
-                          self.velocity_x,    self.velocity_y], dtype=float), reward, done, {}
+                          self.velocity_x,    self.velocity_y], dtype=float), reward, terminated, truncated, {}
 
-    def reset(self):
+    def reset(self, **kwargs):
 
         """ Reset the environment.
 
         Returns:
             observation (numpy.ndarray): The initial observation of the environment. """
+
+        self.current_step = 0
 
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
@@ -152,6 +160,9 @@ class SelfBalancingRobot(gym.Env):
                           0, 0], dtype=float)
 
     def render(self):
+        pass
+
+    def close(self):
         pass
 
     def get_reward(self):

@@ -6,6 +6,12 @@
 	  <arg name="gui" default="true"/>
 	  <arg name="headless" default="false"/>
 	  <arg name="debug" default="false"/>
+	  <arg name="X" default="0"/>
+	  <arg name="Y" default="0"/>
+	  <arg name="Z" default="0.145"/>
+	  <arg name="r" default="0"/>
+	  <arg name="p" default="0"/>
+	  <arg name="y" default="0"/>
 
 
 	<!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
@@ -22,12 +28,12 @@
 	      pkg ="gazebo_ros" 
 	      type ="spawn_model"
 	      args="-file $(find self_balancing_robot)/urdf/robot.urdf -urdf -model self_balancing_robot
-	      -x 0 
-	      -y 0 
-	      -z 0.145
-		  -R 0
-		  -P 0.0 
-		  -Y 0"
+	      -x $(arg X) 
+	      -y $(arg Y)
+	      -z $(arg Z)
+		  -R $(arg r)
+		  -P $(arg p)
+		  -Y $(arg y)"
 	      respawn="false" 
 	      output ="screen"/>
 	
