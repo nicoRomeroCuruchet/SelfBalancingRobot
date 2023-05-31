@@ -152,13 +152,16 @@ class SelfBalancingRobot(gym.Env):
     def get_reward(self):
 
         """
-        Calculate the reward based on the current_angle of the robot.
+        Calculate the reward based on the current_angle, position and velocity of the robot.
 
         Returns:
             reward (float): The reward value based on the current angle.
         """
+        # 
         done = abs(self.current_angle) > self.theshold or abs(self.position_x) > 1 or abs(self.position_y) > 1
+
         angle_correction    = 3.0 - abs(self.current_angle) * 10
         position_correction = -(abs(self.position_x) + abs(self.position_y))*0.3
         velocity_correction = -(abs(self.velocity_x*0.1 + abs(self.velocity_y)))*0.1
-        return -200.0 if done else  angle_correction + position_correction + velocity_correction
+
+        return -200.0 if done else angle_correction + position_correction + velocity_correction
