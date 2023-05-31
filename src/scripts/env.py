@@ -169,6 +169,6 @@ class SelfBalancingRobot(gym.Env):
 
         angle_correction    =  2.0 - abs(self.current_angle) * 10
         position_correction = -(abs(self.position_x) + abs(self.position_y))*0.3
-        velocity_correction = -(abs(self.velocity_x) + abs(self.velocity_y))
+        velocity_correction = -(abs(self.velocity_x) + abs(self.velocity_y))*2
 
         return -200.0 if done else angle_correction + position_correction + velocity_correction
