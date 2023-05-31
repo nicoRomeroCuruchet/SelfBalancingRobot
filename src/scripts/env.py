@@ -156,6 +156,7 @@ class SelfBalancingRobot(gym.Env):
         self.current_angle = 0 
         self.angular_y     = 0
         
+        info = {}
         return  np.array([0, 0,
                           0, 0,
                           0, 0], dtype=float), info
