@@ -39,24 +39,24 @@ class SelfBalancingRobot(gym.Env):
                                                 high=np.array([math.pi/2,  float('inf'),  1,  1,  float('inf'),  float('inf')]), dtype=float)
         
         # Create the environment and stop de the robot
-        self.vel=Twist()
-        self.vel.linear.x = 0
-        self.vel.linear.y = 0
-        self.vel.linear.z = 0
-        self.vel.angular.x =0
+        self.vel           =Twist()
+        self.vel.linear.x  = 0
+        self.vel.linear.y  = 0
+        self.vel.linear.z  = 0
+        self.vel.angular.x = 0
         self.vel.angular.y = 0
         self.vel.angular.z = 0
         self.pub.publish(self.vel)
         # refresh rate in ground truth
-        self.time_interval     = 0.005   # running at ~200 Hz
-        self.current_angle     = 0       # the pitch angle of the robot
+        self.time_interval = 0.005   # running at ~200 Hz
+        self.current_angle = 0       # the pitch angle of the robot
         # storage callback data
-        self.angular_y  = 0
-        self.imu_data   = None
-        self.position_x = None
-        self.position_y = None
-        self.velocity_x = None
-        self.velocity_y = None
+        self.angular_y     = 0
+        self.imu_data      = None
+        self.position_x    = None
+        self.position_y    = None
+        self.velocity_x    = None
+        self.velocity_y    = None
         # Angle thresholds angle expresed in radians and position in meters
         self.threshold_angle     = 0.4
         self.threshold_position  = 1.0
@@ -131,6 +131,7 @@ class SelfBalancingRobot(gym.Env):
         if done:
             vel.linear.x  = 0
             self.pub.publish(vel)
+
         # environment observation
         return  np.array([self.current_angle, self.angular_y,
                           self.position_x,    self.position_y,
@@ -157,7 +158,7 @@ class SelfBalancingRobot(gym.Env):
         
         return  np.array([0, 0,
                           0, 0,
-                          0, 0], dtype=float)
+                          0, 0], dtype=float), info
 
     def render(self):
         pass
