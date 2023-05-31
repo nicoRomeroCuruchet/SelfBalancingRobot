@@ -135,16 +135,16 @@ class SelfBalancingRobot(gym.Env):
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
 
-        self.current_angle = 0 
-        self.angular_y     = 0
         self.position_x    = 0
         self.position_y    = 0
         self.velocity_x    = 0
         self.velocity_y    = 0
-
-        return  np.array([self.current_angle, self.angular_y,
-                          self.position_x, self.position_y,
-                          self.velocity_x, self.velocity_y ], dtype=float)
+        self.current_angle = 0 
+        self.angular_y     = 0
+        
+        return  np.array([0, 0,
+                          0, 0,
+                          0, 0], dtype=float)
 
     def render(self):
         pass
@@ -160,8 +160,8 @@ class SelfBalancingRobot(gym.Env):
         # 
         done = abs(self.current_angle) > self.theshold or abs(self.position_x) > 1 or abs(self.position_y) > 1
 
-        angle_correction    = 3.0 - abs(self.current_angle) * 10
+        angle_correction    =  3.0 - abs(self.current_angle) * 10
         position_correction = -(abs(self.position_x) + abs(self.position_y))*0.3
-        velocity_correction = -(abs(self.velocity_x*0.1 + abs(self.velocity_y)))*0.1
+        velocity_correction = -(abs(self.velocity_x + abs(self.velocity_y)))*0.3
 
         return -200.0 if done else angle_correction + position_correction + velocity_correction

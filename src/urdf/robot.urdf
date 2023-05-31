@@ -190,6 +190,7 @@
   <!--  SENSORS -->
   
   <!-- DIFFERENTIAL DRIVE -->
+  
   <gazebo>
     <plugin filename="libgazebo_ros_diff_drive.so" name="differential_drive_controller">
       <legacyMode>false</legacyMode>
@@ -201,7 +202,7 @@
       <wheelSeparation>0.2</wheelSeparation>
       <wheelDiameter>0.065</wheelDiameter>
       <torque>20</torque>
-      <commandTopic>self_balancing_robot//cmd_vel</commandTopic>
+      <commandTopic>self_balancing_robot/cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
       <odometrySource>2</odometrySource>
@@ -216,6 +217,7 @@
       <rosDebugLevel>debug</rosDebugLevel>
     </plugin>
   </gazebo>
+
   <gazebo>
     <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
       <alwaysOn>true</alwaysOn>
