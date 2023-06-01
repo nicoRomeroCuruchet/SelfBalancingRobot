@@ -1,21 +1,15 @@
-# PPO for Self-Balancing Robot
+PPO for Self-Balancing Robot Control with ROS/Gazebo
 
-This project implements the Proximal Policy Optimization (PPO) algorithm for training a self-balancing robot using reinforcement learning. The goal is to teach the robot to maintain its balance and navigate its environment by adjusting its actions based on feedback from the sensors.
+This repository contains the implementation of the Proximal Policy Optimization (PPO) algorithm applied to control a self-balancing robot simulated in the ROS (Robot Operating System) and Gazebo simulation environment. The PPO algorithm code has been developed from scratch using PyTorch by Eric Yang Yu.
+Overview
 
-![Demo](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDczMTIxZGEzZTU4ZWMyMWI5M2NjY2UwMjgzZTZiNzU5NzIwMTRjNiZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/dUppFtwYS4GfFBeRvB/giphy.gif)
-
-
-# Overview
-
-The PPO algorithm is a state-of-the-art reinforcement learning method that addresses the challenge of stable and sample-efficient policy optimization. It strikes a balance between exploration and exploitation while ensuring stable policy updates. By training the self-balancing robot using PPO, we aim to enable it to learn an optimal policy for maintaining balance and making appropriate movements.
-
+The self-balancing robot is simulated in ROS/Gazebo, which provides an accurate simulation environment for testing and training the control algorithm. The PPO algorithm is a state-of-the-art reinforcement learning method used to train the robot to maintain balance and make appropriate movements based on sensor feedback.
 
 # Features
 
 - Simulation Environment: Utilize Gazebo, a powerful robotics simulator, to create a virtual world for the self-balancing robot.
 - Control Algorithms: Implement various control algorithms, such as PID (Proportional-Integral-Derivative) or RL (Reinforcement Learning), to continuously adjust the        robot's movements and maintain its vertical balance.import gym
 - Real-Time Visualization: Visualize the robot's state and control inputs in real-time using ROS tools and Gazebo's graphical interface.
-
 
 # Setup 
 
