@@ -3,10 +3,11 @@ import time
 import math
 import rospy
 import numpy as np
+from gazebo_msgs.msg import ModelState
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from std_srvs.srv import Empty
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 
 class SelfBalancingRobot(gym.Env):
 
@@ -27,6 +28,8 @@ class SelfBalancingRobot(gym.Env):
 
         # Create the publisher to control the velocity of the robot
         self.pub                     = rospy.Publisher('/self_balancing_robot/cmd_vel', Twist, queue_size=1)
+        # Create the publisher to set the state of the robot
+        self.set_model_state_pub     = rospy.Publisher('/gazebo/set_model_state', ModelState, queue_size=1)
         # Create the subscriber to get the ground truth data
         self.sub_ground              = rospy.Subscriber('/self_balancing_robot/ground_truth/state', Odometry, self.ground_truth_callback)
         # Create the service to reset the simulation
@@ -66,6 +69,7 @@ class SelfBalancingRobot(gym.Env):
         except:
             self.max_steps       = float('inf')
         
+
     def ground_truth_callback(self, msg):
 
         """ Callback function for ground truth data.
@@ -136,6 +140,21 @@ class SelfBalancingRobot(gym.Env):
         return  np.array([self.current_angle, self.angular_y,
                           self.position_x,    self.position_y,
                           self.velocity_x,    self.velocity_y], dtype=float), reward, terminated, truncated, {}
+    def set_robot_pose(self, x, y, z, roll, pitch, yaw):
+        # Create the ModelState message
+        model_state = ModelState()
+        model_state.model_name = 'self_balancing_robot'
+
+        # Set the pose
+        model_state.pose.position = Point(x, y, z)
+        model_state.pose.orientation = Quaternion(*quaternion_from_euler(roll, pitch, yaw))
+
+        rospy.wait_for_service('/gazebo/set_model_state')
+        # Publish the message
+        self.set_model_state_pub.publish(model_state)
+        # rospy.sleep(1)  # Wait for the pose to be set
+        # #TODO: necesito esperar tanto?
+
 
     def reset(self, **kwargs):
 
@@ -146,15 +165,18 @@ class SelfBalancingRobot(gym.Env):
 
         self.current_step = 0
 
-        rospy.wait_for_service('/gazebo/reset_simulation')
-        self.reset_simulation_client()
+        # rospy.wait_for_service('/gazebo/reset_simulation')
+        # self.reset_simulation_client()
 
-        self.position_x    = 0
-        self.position_y    = 0
-        self.velocity_x    = 0
-        self.velocity_y    = 0
-        self.current_angle = 0 
-        self.angular_y     = 0
+        x = 0
+        y = 0
+        roll = 0
+        pitch = np.random.uniform(low=-0.2, high=0.1, size=None)
+        yaw = 0
+        # Height calculated to have the robot standing on the surface
+        z = (0.1 + 0.0125) * np.cos(pitch) + 0.0325
+        
+        self.set_robot_pose(x, y, z, roll, pitch, yaw)
         
         info = {}
         return  np.array([0, 0,
