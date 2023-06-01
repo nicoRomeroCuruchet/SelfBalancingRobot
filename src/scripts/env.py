@@ -59,7 +59,7 @@ class SelfBalancingRobot(gym.Env):
         self.velocity_y = None
         # Angle thresholds angle expresed in radians and position in meters
         self.threshold_angle     = 0.2
-        self.threshold_position  = 0.1
+        self.threshold_position  = 0.05
         
     def ground_truth_callback(self, msg):
 
@@ -118,8 +118,8 @@ class SelfBalancingRobot(gym.Env):
         reward = self.get_reward()
 
         done = abs(self.current_angle) > self.threshold_angle or\
-               abs(self.position_x) > self.threshold_position or\
-               abs(self.position_y) > self.threshold_position 
+               abs(self.position_x)    > self.threshold_position or\
+               abs(self.position_y)    > self.threshold_position 
 
         if done:
             vel.linear.x  = 0
@@ -140,12 +140,13 @@ class SelfBalancingRobot(gym.Env):
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
 
+        self.current_angle = 0 
+        self.angular_y     = 0
         self.position_x    = 0
         self.position_y    = 0
         self.velocity_x    = 0
         self.velocity_y    = 0
-        self.current_angle = 0 
-        self.angular_y     = 0
+        
         
         return  np.array([0, 0,
                           0, 0,
