@@ -1,8 +1,14 @@
-# Self Balancing Robot
+# PPO for Self-Balancing Robot
 
-This project aims to develop a simulated self-balancing robot using ROS (Robot Operating System) and Gazebo. The goal is to implement control algorithms that enable the robot to maintain its balance in an inverted pendulum configuration.The Self Balancing Robot Simulation project focuses on tackling the challenge of stabilizing an inverted pendulum. By leveraging ROS and Gazebo, we create a realistic simulation environment to develop and test control algorithms for the robot's balance maintenance.
+This project implements the Proximal Policy Optimization (PPO) algorithm for training a self-balancing robot using reinforcement learning. The goal is to teach the robot to maintain its balance and navigate its environment by adjusting its actions based on feedback from the sensors.
 
 ![Demo](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDczMTIxZGEzZTU4ZWMyMWI5M2NjY2UwMjgzZTZiNzU5NzIwMTRjNiZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/dUppFtwYS4GfFBeRvB/giphy.gif)
+
+
+# Overview
+
+The PPO algorithm is a state-of-the-art reinforcement learning method that addresses the challenge of stable and sample-efficient policy optimization. It strikes a balance between exploration and exploitation while ensuring stable policy updates. By training the self-balancing robot using PPO, we aim to enable it to learn an optimal policy for maintaining balance and making appropriate movements.
+
 
 # Features
 
