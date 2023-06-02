@@ -24,7 +24,7 @@ To test model:
 
       python3 main.py --mode test --actor_model ppo_actor.pth
 
-To train with existing actor/critic models:
+To train with existing actor/critic trained models:
 
       python3 main.py --actor_model ppo_actor.pth --critic_model ppo_critic.pth
 
