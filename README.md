@@ -33,3 +33,7 @@ This project depends on the following packages:
 
 - ROS Noetic
 - Gazebo 11
+
+License
+The Self Balancing Robot Simulation project is released under the MIT. Please review the license file for more details and comply with the terms when using or modifying the project.
+We hope you find this Self Balancing Robot Simulation project engaging and informative. Feel free to explore the documentation, experiment with different control algorithms, and contribute to the project's ongoing development. Enjoy the journey of building and simulating a self-balancing robot with ROS and Gazebo!
