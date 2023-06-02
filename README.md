@@ -8,7 +8,7 @@ The self-balancing robot is simulated in ROS/Gazebo, which provides an accurate 
 
 # Setup 
 
-      pip install -r requirements.txts
+      pip install -r requirements.txt
       git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
       cd SelfBalancingRobot
       catkin_make
