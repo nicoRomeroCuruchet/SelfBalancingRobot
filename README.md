@@ -14,11 +14,8 @@ The self-balancing robot is simulated in ROS/Gazebo, which provides an accurate 
       source devel/setup.bash
       roslaunch self_balancing_robot main.launch
       
-      
-
-
 # Getting Started
-Once the project is set up, launch the robot and the enviroment.
+Once compiled and with the robot running in the Gazebo simulator.
       import gym
       roslaunch self_balancing_robot main.launch
 
