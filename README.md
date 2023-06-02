@@ -16,9 +16,6 @@ The self-balancing robot is simulated in ROS/Gazebo, which provides an accurate 
       
 # Getting Started
 Once compiled and with the robot running in the Gazebo simulator.
-      import gym
-      roslaunch self_balancing_robot main.launch
-
 To train from scratch:
 
       python3 main.py
