@@ -44,10 +44,17 @@ def main(args):
     # observation and action spaces.
     env = DummyVecEnv([lambda: Monitor(SelfBalancingRobot(max_steps=10e10))])
 
-    print(env)
-    episode_rewards = env.env_method(attr_name=get_episode_rewards, indices=0)
-    # Es env_method o get_attr? Con ambos me tira error
-    print(episode_rewards)
+    #TODO: borrar
+    # print(env)
+    # # episode_rewards = env.env_method(attr_name=get_episode_rewards, indices=0)
+    # env_aux = env.envs[0]
+    # print(env_aux)
+    # episode_rewards = env.envs[0].get_episode_rewards()
+    
+    # # Es env_method o get_attr? Con ambos me tira error
+    
+    # print(episode_rewards)
+
     # env = NormalizeActionWrapper(env) #TODO
 
     eval_env = env #TODO Debería ser diferente?
@@ -56,18 +63,19 @@ def main(args):
                                 log_path="./logs/", eval_freq=500,
                                 deterministic=True, render=False)
     
-    plot_callback = PlotCallback(check_freq = 5)
+    plot_callback = PlotCallback(check_freq = 100)
 
     save_dir = "./logs/"
-    verbose = 1
+    verbose = 0
     try:
         model = PPO.load(f"{save_dir}/best_model.zip", env, verbose=verbose)
         print("Loaded previously saved best model")
     except:
         model = PPO(MlpPolicy, env, verbose=verbose)
         print("Created new model")
+
     # Train the agent for 10000 steps
-    # model.learn(total_timesteps=1_000, progress_bar=True, callback=[plot_callback, eval_callback])
+    model.learn(total_timesteps=1_000, progress_bar=True, callback=[plot_callback, eval_callback])
 
     # # Evaluate the best trained agent
     # print("Loading best model so far")
