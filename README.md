@@ -27,19 +27,6 @@ To test model:
 To train with existing actor/critic trained models:
 
       python3 main.py --actor_model ppo_actor.pth --critic_model ppo_critic.pth
-
-# ROS topics: Velocity and IMU topic
-
-- Change velocity:
-
-      rostopic pub /self_balancing_robot/cmd_vel geometry_msgs/Twist "linear:
-        x: 1.0
-        y: 0.0
-        z: 0.0
-      angular:
-        x: 0.0
-        y: 0.0
-        z: 0.0" -r 10
              
 # Dependencies
 This project depends on the following packages:
