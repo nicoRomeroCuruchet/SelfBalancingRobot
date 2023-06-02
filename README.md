@@ -6,11 +6,10 @@ This repository contains the implementation of the Proximal Policy Optimization 
 
 The self-balancing robot is simulated in ROS/Gazebo, which provides an accurate simulation environment for testing and training the control algorithm. The PPO algorithm is a state-of-the-art reinforcement learning method used to train the robot to maintain balance and make appropriate movements based on sensor feedback.
 
-# Setup 
-
-      pip install -r requirements.txt
+# Setup       
       git clone https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
       cd SelfBalancingRobot
+      pip install -r requirements.txt
       catkin_make
       source devel/setup.bash
       roslaunch self_balancing_robot main.launch
