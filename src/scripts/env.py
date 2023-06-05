@@ -61,14 +61,13 @@ class SelfBalancingRobot(gym.Env):
         self.velocity_x    = None
         self.velocity_y    = None
         # Angle thresholds angle expresed in radians and position in meters
-        self.threshold_angle     = 0.4
+        self.threshold_angle     = 0.5 #0.4
         self.threshold_position  = 1.0
         self.current_step        = 0
         try:
             self.max_steps       = max_steps
         except:
             self.max_steps       = float('inf')
-        
 
     def ground_truth_callback(self, msg):
 
@@ -126,7 +125,6 @@ class SelfBalancingRobot(gym.Env):
         if(interval < self.time_interval):
             time.sleep(self.time_interval - interval)
 
-        reward = self.get_reward()
         terminated = abs(self.current_angle) > self.threshold_angle or\
                     abs(self.position_x) > self.threshold_position or\
                     abs(self.position_y) > self.threshold_position 
@@ -135,11 +133,13 @@ class SelfBalancingRobot(gym.Env):
         if done:
             vel.linear.x  = 0
             self.pub.publish(vel)
-
+        reward = self.get_reward()
+        
         # environment observation
         return  np.array([self.current_angle, self.angular_y,
                           self.position_x,    self.position_y,
                           self.velocity_x,    self.velocity_y], dtype=float), reward, terminated, truncated, {}
+    
     def set_robot_pose(self, x, y, z, roll, pitch, yaw):
         # Create the ModelState message
         model_state = ModelState()
@@ -155,14 +155,12 @@ class SelfBalancingRobot(gym.Env):
         # rospy.sleep(1)  # Wait for the pose to be set
         # #TODO: necesito esperar tanto?
 
-
     def reset(self, **kwargs):
 
         """ Reset the environment.
 
         Returns:
             observation (numpy.ndarray): The initial observation of the environment. """
-
         self.current_step = 0
 
         # rospy.wait_for_service('/gazebo/reset_simulation')
@@ -171,7 +169,7 @@ class SelfBalancingRobot(gym.Env):
         x = 0
         y = 0
         roll = 0
-        pitch = np.random.uniform(low=-0.2, high=0.1, size=None)
+        pitch = np.random.uniform(low=-0.2, high=0.2, size=None)
         yaw = 0
         # Height calculated to have the robot standing on the surface
         z = (0.1 + 0.0125) * np.cos(pitch) + 0.0325

@@ -21,12 +21,6 @@ class PlotCallback(BaseCallback):
         except:
             self.check_freq = 10
 
-    def _on_rollout_end(self) -> None:
-        """
-        This event is triggered before updating the policy.
-        """
-        pass
-
     def _on_training_end(self) -> None:
         """
         This event is triggered before exiting the `learn()` method.
@@ -58,7 +52,7 @@ class PlotCallback(BaseCallback):
             
             if self._polt1 is None: # make the plot
                 plt.ion()
-                fig = plt.figure(figsize=(6,3))
+                fig = plt.figure(figsize=(8,4))
                 ax1 = fig.add_subplot(121)
                 ax1.set_xlabel('N° Episode')
                 ax1.set_ylabel('Episode Reward')
