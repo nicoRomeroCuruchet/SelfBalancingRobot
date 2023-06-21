@@ -1,0 +1,21 @@
+hyperparameters = {
+                'timesteps_per_batch': 7048,         # Es el numero de batchs para entrenar la red neuronal. 
+                'max_timesteps_per_episode': 3000,   # Es la cantidad de steps que se van a ejecturar en un episodio.
+                'gamma': 0.99,                       # Factor de descuento, cuanto estos dispuesto a valorar las rewards futuras.
+                'n_updates_per_iteration': 10,       # Cada cuantas iteraciones actualiza los archivos que guardan los pesos de la red neuronal.
+                'lr': 3e-4,                          # Learning rate para el algoritmo the gradient descend
+                'clip': 0.2,                         # helps define the threshold to clip the ratio during SGA (es para el entrenamiento de la red sugiere usar 0.2)
+                'render': False,                     # si queremos o no renderizar.
+                'render_every_i': 10                 # No lo estamos usando pero es cada cuantas iteraciones muestra un render.
+              }
+
+
+Entonces es asi: 
+
+1 - Se van a hacer total_timesteps pasos de entrenamiento que se define en main en el metodo learn. 
+2 - El metodo learn ejecuta rollout total_timesteps.
+3 - El metodo rollout junta los batchs para la red neuronal, la cantidad de batchs que junta esta definida en timesteps_per_batch.
+    Cuando se termina un batch se hace un paso del gradient descend que actualiza los pesos de la red.
+4 - max_timesteps_per_episode determina la cantidad de steps que se hacen. Es decir, la duracion de cada uno de los batchs.
+
+Estos batchs juntan rewards, acciones de la red, y longitud del episodio (que si no lo saco el done del step) tiene que coincidir con max_timesteps_per_episode
