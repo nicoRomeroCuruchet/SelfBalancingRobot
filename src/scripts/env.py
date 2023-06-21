@@ -59,7 +59,21 @@ class SelfBalancingRobot(gym.Env):
         self.velocity_y = None
         # Angle thresholds angle expresed in radians and position in meters
         self.threshold_angle     = 0.2
-        self.threshold_position  = 0.05
+        self.threshold_position  = 0.1
+        # For plotting
+        self.episode_time = []
+        self.episode_rewards = []
+        self.episode_lengths = []
+        self.current_reward = 0
+        self.current_length = 0
+
+        self.initial_angle = [0.0]
+        self.final_angle = []
+        self.bandera = False
+        self.delays = []
+        self.time1 = 0
+
+
         
     def ground_truth_callback(self, msg):
 
@@ -68,6 +82,10 @@ class SelfBalancingRobot(gym.Env):
         Args:
             msg (Odometry): The ground truth odometry message. """
         
+
+        if self.bandera: 
+            self.delays += [rospy.get_time()]
+
         # Position of the robot
         self.position_x       = msg.pose.pose.position.x
         self.position_y       = msg.pose.pose.position.y
@@ -84,6 +102,10 @@ class SelfBalancingRobot(gym.Env):
                                                           q.y, 
                                                           q.z, 
                                                           q.w])
+        
+        if self.bandera: 
+            self.initial_angle += [self.current_angle]
+            self.bandera = False
 
     def step(self, action):
 
@@ -116,14 +138,22 @@ class SelfBalancingRobot(gym.Env):
             time.sleep(self.time_interval - interval)
 
         reward = self.get_reward()
+        self.current_reward += reward
+        self.current_length += 1
 
         done = abs(self.current_angle) > self.threshold_angle or\
                abs(self.position_x)    > self.threshold_position or\
                abs(self.position_y)    > self.threshold_position 
 
         if done:
+            self.episode_rewards.append(self.current_reward)
+            self.episode_lengths.append(self.current_length)
+            self.episode_time += [rospy.get_time()]
+            self.final_angle += [self.current_angle]
             vel.linear.x  = 0
             self.pub.publish(vel)
+            self.current_reward = 0
+            self.current_length = 0
 
         # environment observation
         return  np.array([self.current_angle, self.angular_y,
@@ -151,7 +181,9 @@ class SelfBalancingRobot(gym.Env):
         return  np.array([0, 0,
                           0, 0,
                           0, 0], dtype=float)
-
+    
+        self.time1 = 0
+        
     def render(self):
         pass
 

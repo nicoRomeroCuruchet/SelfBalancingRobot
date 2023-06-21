@@ -1,10 +1,63 @@
 import sys
 import torch
+import numpy as np
 from ppo import PPO
 from arguments import get_args
+import matplotlib.pyplot as plt
 from network import FeedForwardNN
 from env import SelfBalancingRobot
 from eval_policy import eval_policy
+
+def plot_episodes(env):
+    # episode_rewards = env.envs[0].get_episode_rewards()
+    # episode_lengths = env.envs[0].get_episode_lengths()
+    # episode_timestamps = env.envs[0].get_episode_times()
+    episode_rewards = env.episode_rewards
+    episode_lengths = env.episode_lengths
+    episode_times = env.episode_time
+    episode_initial_angle = env.initial_angle
+    episode_final_angle = env.final_angle
+    delays = env.delays
+
+    number_of_episode = np.arange(1.,len(episode_rewards)+1)
+    
+    plt.ion()
+    # fig = plt.figure(figsize=(12,4))
+    fig = plt.figure(figsize=(15,4)) #(15,9)
+    ax1 = fig.add_subplot(131)
+    ax1.set_xlabel('N° Episode')
+    ax1.set_ylabel('Episode Reward')
+    ax1.set_title('Episodes Total Reward')
+    ax1.plot(number_of_episode,episode_rewards)
+    ax2 = fig.add_subplot(132)
+    ax2.set_xlabel('N° Episode')
+    ax2.set_ylabel('Episode Length')
+    ax2.set_title('Episodes Length')
+    ax2.plot(number_of_episode,episode_lengths)
+    ax3 = fig.add_subplot(133)
+    ax3.set_xlabel('N° Episode')
+    ax3.set_ylabel('Episode Time')
+    ax3.set_title('Episodes Times')
+    ax3.plot(number_of_episode, episode_times)
+    plt.ion()
+    fig = plt.figure(figsize=(15,4))
+    ax4 = fig.add_subplot(131)
+    ax4.set_xlabel('N° Episode')
+    ax4.set_ylabel('Initial Angle')
+    ax4.set_title('Episodes Initial Angle')
+    ax4.plot(episode_initial_angle)#number_of_episode,episode_initial_angle)
+    ax5 = fig.add_subplot(132)
+    ax5.set_xlabel('N° Episode')
+    ax5.set_ylabel('Final Angle')
+    ax5.set_title('Episodes Final Angle')
+    ax5.plot(episode_final_angle)#number_of_episode,episode_final_angle)
+    ax6 = fig.add_subplot(133)
+    ax6.set_xlabel('N° Episode')
+    ax6.set_ylabel('Delay')
+    ax6.set_title('Delay between reset and 1st state measurement')
+    ax6.plot(delays)
+    #plt.savefig('logs/rewards_and_lengths_plot.svg', format='svg')
+    plt.show(block=True)
 
 def train(env, hyperparameters, actor_model, critic_model):
 
@@ -41,7 +94,7 @@ def train(env, hyperparameters, actor_model, critic_model):
     # Train the PPO model with a specified total timesteps
     # NOTE: You can change the total timesteps here, I put a big number just because
     # you can kill the process whenever you feel like PPO is converging
-    model.learn(total_timesteps=800_000_000)
+    model.learn(total_timesteps=100000)
 
 def test(env, actor_model):
 
@@ -115,6 +168,9 @@ def main(args):
         train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model)
     else:
         test(env=env, actor_model=args.actor_model)
+
+    
+    plot_episodes(env)
 
 if __name__ == '__main__':
     args = get_args() # Parse arguments from command line
