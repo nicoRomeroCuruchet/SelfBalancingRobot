@@ -44,10 +44,19 @@ def main(args):
         print("Creating new model")
 
     # Train the agent
-    model.learn(total_timesteps=400000, progress_bar=True)
+    #model.learn(total_timesteps=400000, progress_bar=True)
 
     # Save the model
-    model.save("self_balancing_robot")
+    #model.save("self_balancing_robot")
+    while True:
+        obs, _ = env.reset()
+        for i in range(1000):
+            action, action_probs = model.predict(obs, deterministic=True)
+            obs, rewards, done, truncate , info = env.step(action)
+            env.render()
+            if done:
+                print("Episode finished after {} timesteps".format(i+1))
+                break
 
 if __name__ == '__main__':
 
