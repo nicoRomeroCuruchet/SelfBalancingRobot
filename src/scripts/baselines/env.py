@@ -88,24 +88,12 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.velocity_y = None
         # Angle thresholds angle expresed in radians and position in meters
         self.threshold_angle     = 0.2
-        self.threshold_position  = 0.05
+        self.threshold_position  = 0.1
 
         self.current_step = 0
         self.max_steps = max_timesteps_per_episode
 
-        # To save episodes' duration
-        self.episode_time = []
-        self.initial_angle = [0.0]
-        self.final_angle = []
-        self.delays = []
 
-        self.episode_rewards = []
-        self.episode_lengths = []
-
-        self.current_episode_reward = 0
-        self.current_episode_length = 0
-
-        self.firstIteration = False
 
     def ground_truth_callback(self, msg):
 
@@ -114,10 +102,6 @@ class SelfBalancingRobotBaseLine(gym.Env):
         Args:
             msg (Odometry): The ground truth odometry message. """
         
-        
-        if self.firstIteration:
-            self.delays += [rospy.get_time()]
-
         # Position of the robot
         self.position_x       = msg.pose.pose.position.x
         self.position_y       = msg.pose.pose.position.y
@@ -135,10 +119,6 @@ class SelfBalancingRobotBaseLine(gym.Env):
                                                           q.z, 
                                                           q.w])
 
-        if self.firstIteration: 
-            self.initial_angle += [self.current_angle]
-            self.firstIteration = False
-
     def step(self, action):
 
         """ Perform a simulation step in the environment.
@@ -152,11 +132,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
             done (bool): Whether the episode is done or not.
             info (dict): Additional information about the step. """
 
-        self.current_step += 1
-
-        # Increase episode length by 1
-        self.current_episode_length += 1
-
+        
         # For the time being, we will not be scaling the action.
         # scaled_action = self.scale_action(action, 1.0)
 
@@ -179,28 +155,17 @@ class SelfBalancingRobotBaseLine(gym.Env):
 
         reward = self.get_reward()
 
-        # Increase current episode reward
-        self.current_episode_reward += reward
-
+        # Check if the episode is done
         done = abs(self.current_angle) > self.threshold_angle or\
                abs(self.position_x)    > self.threshold_position or\
                abs(self.position_y)    > self.threshold_position 
 
+        self.current_step += 1
         truncated = self.current_step >= self.max_steps
 
         done = done or truncated
 
         if done:
-
-            self.episode_time += [rospy.get_time()]
-            self.final_angle += [self.current_angle]
-
-            self.episode_rewards += [self.current_episode_reward]
-            self.episode_lengths += [self.current_episode_length]
-
-            self.current_episode_reward = 0
-            self.current_episode_length = 0
-
             vel.linear.x  = 0
             self.pub.publish(vel)
 
@@ -220,11 +185,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
         Returns:
             observation (numpy.ndarray): The initial observation of the environment. """
 
-        self.current_step = 0
-
-
-        self.current_step = 0
-        self.current_episode_length = 0
+       
 
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
@@ -236,10 +197,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.velocity_x    = 0
         self.velocity_y    = 0
         
-        
+        self.current_step = 0
         info = {}
-
-        self.firstIteration = True
 
         return  np.array([0, 0,
                           0, 0,

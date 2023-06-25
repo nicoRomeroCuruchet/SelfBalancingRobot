@@ -17,39 +17,41 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 
-# Tania
-import time
-import matplotlib.pyplot as plt
-import numpy as np
-
-
 # 1) Run main.py
 # 2) Run tensorboard --logdir ./log/
 # 
 
 
 def main(args):
-    
-    env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=10000)
 
-    # Loads already existing model
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Device: ", device)
+    # Create the environment
+    env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=1000)
+
     try:
-        print("Loading existing model")
+        # Loads already existing model
         model = PPO.load("self_balancing_robot")
         model.set_env(env)
+        print("Loading existing model")
     except:
-    # Model does not exist. Create a new one.
+        # Model does not exist. Create a new one.
+        model = PPO(MlpPolicy, 
+                    env, 
+                    verbose=False, 
+                    device=device,
+                    tensorboard_log="./log/")
         print("Creating new model")
-        model = PPO(MlpPolicy, env, verbose=False, tensorboard_log="./log/")
 
-
-    # Train the agent for 10000 steps callback=[plot_callback, eval_callback]
-    model.learn(total_timesteps=300000, progress_bar=True)
+    # Train the agent
+    model.learn(total_timesteps=400000, progress_bar=True)
 
     # Save the model
     model.save("self_balancing_robot")
 
 if __name__ == '__main__':
+
+
     args = get_args() # Parse arguments from command line
     hyperparameters = {
     'timesteps_per_batch': 7048, 
@@ -59,4 +61,5 @@ if __name__ == '__main__':
     'lr': 3e-4, 
     'clip': 0.2,
     }
+
     main(args)
