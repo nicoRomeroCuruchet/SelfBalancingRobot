@@ -160,6 +160,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
                abs(self.position_x)    > self.threshold_position or\
                abs(self.position_y)    > self.threshold_position 
 
+    
         self.current_step += 1
         truncated = self.current_step >= self.max_steps
 
