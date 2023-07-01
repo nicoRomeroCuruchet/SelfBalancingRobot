@@ -37,6 +37,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
         """ Initialize the SelfBalancingRobot environment. """
 
         super(SelfBalancingRobotBaseLine, self).__init__()
+        #TODO: could it be that the initiation should be: super().__init__()  ?
 
         rospy.init_node('controller_node')
 
@@ -67,7 +68,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.observation_space = gym.spaces.Box(low=np.array([-math.pi/2, -float('inf'), -1, -1, -float('inf'), -float('inf')]), 
                                                 high=np.array([math.pi/2,  float('inf'),  1,  1,  float('inf'),  float('inf')]), dtype=float)
 
-        # Create the environment and stop de the robot
+        # Create the environment and stop the robot
         self.vel=Twist()
         self.vel.linear.x = 0
         self.vel.linear.y = 0
@@ -86,12 +87,46 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.position_y = None
         self.velocity_x = None
         self.velocity_y = None
-        # Angle thresholds angle expresed in radians and position in meters
+        # Angle and position thresholds Angle expresed in radians and position in meters
         self.threshold_angle     = 0.2
         self.threshold_position  = 0.1
 
         self.current_step = 0
         self.max_steps = max_timesteps_per_episode
+
+        #Flag to ensure a new measure is available after stepping
+        self.new_measure = False
+        #Debugging-------------------------------------------------
+        # Variables for visualization and debugging
+        # To save episodes' duration
+        self.episode_reward = []
+        self.current_episode_reward = 0
+        self.episode_length = []
+        self.current_episode_length = 0
+        self.episode_time = []
+        self.initial_angle = [0.0]
+        self.final_angle = []
+        self.bandera = False
+        self.delays = []
+        self.time1 = 0
+        self.done = False
+        self.steps_antes_de_done = [0]
+        # To see whether the 1st measure after a reset is done on time (before the 1st step):
+        self.steps_before_1st_measure = [0]
+
+        self.total_steps = 0
+        self.total_measures = 0
+        
+        # Variables for values on each step:
+        self.step_time = []
+        self.step_angle = []
+        self.step_action = []
+        self.step_done = []
+
+        self.measures = []
+        self.measure_times = []
+        self.time0 = rospy.get_time()
+        #----------------------------------------------------------
 
 
 
@@ -101,6 +136,12 @@ class SelfBalancingRobotBaseLine(gym.Env):
 
         Args:
             msg (Odometry): The ground truth odometry message. """
+        
+        #Debugging-------------------------------------------------
+        self.total_measures += 1
+        if self.bandera: 
+            self.delays += [rospy.get_time()]
+        #----------------------------------------------------------
         
         # Position of the robot
         self.position_x       = msg.pose.pose.position.x
@@ -118,6 +159,17 @@ class SelfBalancingRobotBaseLine(gym.Env):
                                                           q.y, 
                                                           q.z, 
                                                           q.w])
+        
+        self.new_measure = True
+        #Debugging-------------------------------------------------
+        self.measures += [self.current_angle]
+        self.measure_times += [rospy.get_time()+self.time0]
+        if self.bandera: 
+            self.initial_angle += [self.current_angle]
+            self.bandera = False
+            self.steps_before_1st_measure += [0]
+        #----------------------------------------------------------
+        
 
     def step(self, action):
 
@@ -145,27 +197,53 @@ class SelfBalancingRobotBaseLine(gym.Env):
         vel.angular.x = 0
         vel.angular.y = 0
         vel.angular.z = 0
+        
+        self.new_measure = False
         self.pub.publish(vel)
 
-        # Check if time interval has passed
-        # the ground truth is published at 200 Hz. Check it in the robot.urdf file, in the sensors section.
-        interval = time.time() - time1
-        if(interval < self.time_interval):
-            time.sleep(self.time_interval - interval)
+        # Wait until a new measure is available
+        while(self.new_measure == False):
+            pass
+        self.new_measure = False
 
         reward = self.get_reward()
 
         # Check if the episode is done
-        done = abs(self.current_angle) > self.threshold_angle or\
-               abs(self.position_x)    > self.threshold_position or\
-               abs(self.position_y)    > self.threshold_position 
+        terminated = abs(self.current_angle) > self.threshold_angle or\
+                     abs(self.position_x)    > self.threshold_position or\
+                     abs(self.position_y)    > self.threshold_position 
 
     
         self.current_step += 1
         truncated = self.current_step >= self.max_steps
 
-        done = done or truncated
-
+        done = terminated or truncated
+        
+        #Debugging-------------------------------------------------
+        self.total_steps += 1
+        self.current_episode_reward += reward
+        self.current_episode_length += 1
+        self.time1 = rospy.get_time() #I will measure time using the simulation time
+        
+        self.step_time += [rospy.get_time()+self.time0]#[self.time1]
+        self.step_angle += [self.current_angle]
+        self.step_action += [action[0]]
+        self.step_done += [done]
+        if self.done:
+            print("ERROR: The episode was done on the previous step, but it hasn't reset yet and it's makeing another step.")
+            self.steps_antes_de_done[-1] += 1
+        self.done = done
+        if done:
+            self.episode_time += [rospy.get_time()+self.time0]
+            self.final_angle += [self.current_angle]
+            self.episode_reward += [self.current_episode_reward]
+            self.episode_length += [self.current_episode_length]
+            self.current_episode_reward = 0
+            self.current_episode_length = 0
+        if self.bandera:
+            self.steps_before_1st_measure[-1] += 1
+        #----------------------------------------------------------
+        
         if done:
             vel.linear.x  = 0
             self.pub.publish(vel)
@@ -173,9 +251,10 @@ class SelfBalancingRobotBaseLine(gym.Env):
         # environment observation
         return  np.array([self.current_angle, self.angular_y,
                           self.position_x,    self.position_y,
-                          self.velocity_x,    self.velocity_y], dtype=float), reward, done, truncated, {}
+                          self.velocity_x,    self.velocity_y], dtype=float), reward, terminated, truncated, {}
 
     # We have normalized our action space to align with best practices, and if needed, we should re-scale it.
+    # TODO: this is not yet being used.
     def scale_action(self, action, factor):
         return factor * action
 
@@ -186,11 +265,25 @@ class SelfBalancingRobotBaseLine(gym.Env):
         Returns:
             observation (numpy.ndarray): The initial observation of the environment. """
 
-       
-
+        #Debugging-------------------------------------------------
+        # self.initial_angle += [pitch]
+        self.done = False
+        self.steps_antes_de_done += [0]
+        self.time1 = 0
+        self.time0 += rospy.get_time()
+        #----------------------------------------------------------
+        
+        time_final = rospy.get_time()
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
+        time_inicial = rospy.get_time()
+        # Now we wait until the reset is successfully performed (and hence the time diminishes)
+        while((time_final < time_inicial) or (abs(self.current_angle) >= self.threshold_angle)):
+            time_inicial = rospy.get_time()
 
+        #Debugging-------------------------------------------------
+        self.bandera = True
+        #----------------------------------------------------------
         self.current_angle = 0 
         self.angular_y     = 0
         self.position_x    = 0
@@ -200,6 +293,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
         
         self.current_step = 0
         info = {}
+
+        
 
         return  np.array([0, 0,
                           0, 0,
