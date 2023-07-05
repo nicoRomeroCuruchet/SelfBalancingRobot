@@ -2,6 +2,8 @@ import sys
 import time
 import torch
 import rospy
+import matplotlib.pyplot as plt
+
 from std_srvs.srv import Empty
 from arguments import get_args
 from env import SelfBalancingRobotBaseLine
@@ -15,7 +17,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 # from callback import PlotCallback
 from debugging import plot_episodes, plot_debugging
-
+from debugging_wrapper import DebugWrapper
 import pdb
 
 # 1) Run main.py
@@ -29,6 +31,7 @@ def main(args):
     print("Device: ", device)
     # Create the environment
     env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=1000)
+    env = DebugWrapper(env)
 
     try:
         # Loads already existing model
@@ -45,44 +48,44 @@ def main(args):
         print("Creating new model")
 
     # # Train the agent
-    # model.learn(total_timesteps=1_000, progress_bar=True)
+    model.learn(total_timesteps=2_000, progress_bar=True)
 
     # # Save the model
     # model.save("self_balancing_robot")
-    # print("Finished training")
-    # plot_episodes(env)
-    # print("Finished plot1")
-    # pdb.run(plot_debugging(env))
-    # plot_debugging(env)
-    
-    # print("Finished plot2")
-    
-    # Create the service to reset the simulation
-    pause = rospy.ServiceProxy('/gazebo/pause_physics',Empty)
-    unpause = rospy.ServiceProxy('/gazebo/unpause_physics',Empty)
+    print("Finished training")
+    plot_episodes(env)
+    print("Finished plot1")
+    plot_debugging(env)
+    print("Finished plot2")
+    plt.show(block=True)
 
-    print("Evaluating the performance")
-    N = 3
-    for k in range(0,N):
-    # k = 0
-    # while True:
-    #     k += 1
-        print("Episode number ", k)
-        obs, _ = env.reset()
-        for i in range(1000):
-            action, action_probs = model.predict(obs, deterministic=True)
-            obs, rewards, terminated, truncated , info = env.step(action)
-            done = terminated or truncated
-            env.render()
-            if done:
-                print("Episode finished after {} timesteps".format(i+1))
+    
+    # # Create the service to reset the simulation
+    # pause = rospy.ServiceProxy('/gazebo/pause_physics',Empty)
+    # unpause = rospy.ServiceProxy('/gazebo/unpause_physics',Empty)
+
+    # print("Evaluating the performance")
+    # N = 3
+    # for k in range(0,N):
+    # # k = 0
+    # # while True:
+    # #     k += 1
+    #     print("Episode number ", k)
+    #     obs, _ = env.reset()
+    #     for i in range(1000):
+    #         action, action_probs = model.predict(obs, deterministic=True)
+    #         obs, rewards, terminated, truncated , info = env.step(action)
+    #         done = terminated or truncated
+    #         env.render()
+    #         if done:
+    #             print("Episode finished after {} timesteps".format(i+1))
                 
-                #Final analysis of the episode:
-                pause()
-                plot_debugging(env)
-                unpause()
+    #             #Final analysis of the episode:
+    #             pause()
+    #             plot_debugging(env)
+    #             unpause()
 
-                break
+    #             break
 
 if __name__ == '__main__':
 
@@ -93,7 +96,7 @@ if __name__ == '__main__':
     'max_timesteps_per_episode': 3000, 
     'gamma': 0.99, 
     'n_updates_per_iteration': 10,
-    'lr': 3e-4, 
+    'lr': 3e-5,#3e-4, 
     'clip': 0.2,
     }
 

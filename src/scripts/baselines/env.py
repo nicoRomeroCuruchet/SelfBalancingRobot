@@ -89,7 +89,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.velocity_y = None
         # Angle and position thresholds Angle expresed in radians and position in meters
         self.threshold_angle     = 0.2
-        self.threshold_position  = 0.1
+        self.threshold_position  = 0.3
 
         self.current_step = 0
         self.max_steps = max_timesteps_per_episode
@@ -98,30 +98,34 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.new_measure = False
         #Debugging-------------------------------------------------
         # Variables for visualization and debugging
-        # To save episodes' duration
-        self.episode_reward = []
-        self.current_episode_reward = 0
-        self.episode_length = []
-        self.current_episode_length = 0
-        self.episode_time = []
-        self.initial_angle = [0.0]
-        self.final_angle = []
-        self.bandera = False
+        # # To save episodes' duration
+        # self.episode_reward = []
+        # self.current_episode_reward = 0
+        # self.episode_length = []
+        # self.current_episode_length = 0
+        # self.episode_time = []
+        self.initial_angle = []
+        self.initial_x = []
+        self.initial_y = []
+        # self.final_angle = []
+        # self.final_x     = []
+        # self.final_y     = []
+        self.bandera = True
         self.delays = []
-        self.time1 = 0
-        self.done = False
-        self.steps_antes_de_done = [0]
+        # self.time1 = 0
+        # self.done = False
+        # self.steps_antes_de_done = [0]
         # To see whether the 1st measure after a reset is done on time (before the 1st step):
         self.steps_before_1st_measure = [0]
 
-        self.total_steps = 0
+        # self.total_steps = 0
         self.total_measures = 0
         
-        # Variables for values on each step:
-        self.step_time = []
-        self.step_angle = []
-        self.step_action = []
-        self.step_done = []
+        # # Variables for values on each step:
+        # self.step_time = []
+        # self.step_angle = []
+        # self.step_action = []
+        # self.step_done = []
 
         self.measures = []
         self.measure_times = []
@@ -166,6 +170,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.measure_times += [rospy.get_time()+self.time0]
         if self.bandera: 
             self.initial_angle += [self.current_angle]
+            self.initial_x     += [self.position_x]
+            self.initial_y     += [self.position_y]
             self.bandera = False
             self.steps_before_1st_measure += [0]
         #----------------------------------------------------------
@@ -219,29 +225,42 @@ class SelfBalancingRobotBaseLine(gym.Env):
 
         done = terminated or truncated
         
+        info = {}
         #Debugging-------------------------------------------------
-        self.total_steps += 1
-        self.current_episode_reward += reward
-        self.current_episode_length += 1
+        # self.total_steps += 1
+        # self.current_episode_reward += reward
+        # self.current_episode_length += 1
         self.time1 = rospy.get_time() #I will measure time using the simulation time
         
-        self.step_time += [rospy.get_time()+self.time0]#[self.time1]
-        self.step_angle += [self.current_angle]
-        self.step_action += [action[0]]
-        self.step_done += [done]
-        if self.done:
-            print("ERROR: The episode was done on the previous step, but it hasn't reset yet and it's makeing another step.")
-            self.steps_antes_de_done[-1] += 1
-        self.done = done
-        if done:
-            self.episode_time += [rospy.get_time()+self.time0]
-            self.final_angle += [self.current_angle]
-            self.episode_reward += [self.current_episode_reward]
-            self.episode_length += [self.current_episode_length]
-            self.current_episode_reward = 0
-            self.current_episode_length = 0
-        if self.bandera:
-            self.steps_before_1st_measure[-1] += 1
+        # self.step_time += [rospy.get_time()+self.time0]#[self.time1]
+        # self.step_angle += [self.current_angle]
+        # self.step_action += [action[0]]
+        # self.step_done += [done]
+        # if self.done:
+        #     print("ERROR: The episode was done on the previous step, but it hasn't reset yet and it's makeing another step.")
+        #     self.steps_antes_de_done[-1] += 1
+        # self.done = done
+        # if done:
+        #     self.episode_time += [rospy.get_time()+self.time0]
+        #     self.final_angle += [self.current_angle]
+        #     self.final_x     += [self.position_x]
+        #     self.final_y     += [self.position_y]
+            # self.episode_reward += [self.current_episode_reward]
+            # self.episode_length += [self.current_episode_length]
+            # self.current_episode_reward = 0
+            # self.current_episode_length = 0
+        # if self.bandera:
+        #     self.steps_before_1st_measure[-1] += 1
+        info = {
+            "steps_before_1st_measure" : self.steps_before_1st_measure,
+            "initial_angle"            : self.initial_angle,
+            "initial_x"                : self.initial_x,
+            "initial_y"                : self.initial_y,
+            "delays"                   : self.delays,
+            "total_measures"           : self.total_measures,
+            "measures"                 : self.measures,
+            "measure_times"            : self.measure_times
+        }
         #----------------------------------------------------------
         
         if done:
@@ -251,7 +270,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
         # environment observation
         return  np.array([self.current_angle, self.angular_y,
                           self.position_x,    self.position_y,
-                          self.velocity_x,    self.velocity_y], dtype=float), reward, terminated, truncated, {}
+                          self.velocity_x,    self.velocity_y], dtype=float), reward, terminated, truncated, info
 
     # We have normalized our action space to align with best practices, and if needed, we should re-scale it.
     # TODO: this is not yet being used.
@@ -266,10 +285,10 @@ class SelfBalancingRobotBaseLine(gym.Env):
             observation (numpy.ndarray): The initial observation of the environment. """
 
         #Debugging-------------------------------------------------
-        # self.initial_angle += [pitch]
-        self.done = False
-        self.steps_antes_de_done += [0]
-        self.time1 = 0
+        # # self.initial_angle += [pitch]
+        # self.done = False
+        # self.steps_antes_de_done += [0]
+        # self.time1 = 0
         self.time0 += rospy.get_time()
         #----------------------------------------------------------
         
@@ -284,7 +303,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
         #Debugging-------------------------------------------------
         self.bandera = True
         #----------------------------------------------------------
-        self.current_angle = 0 
+        # self.current_angle = 0 
         self.angular_y     = 0
         self.position_x    = 0
         self.position_y    = 0
@@ -311,13 +330,14 @@ class SelfBalancingRobotBaseLine(gym.Env):
         Returns:
             reward (float): The reward value based on the current angle.
         """
-        # 
         done = abs(self.current_angle) > self.threshold_angle or\
                abs(self.position_x)    > self.threshold_position or\
                abs(self.position_y)    > self.threshold_position 
 
-        angle_correction    =  2.0 - abs(self.current_angle) * 10
-        position_correction = -(abs(self.position_x) + abs(self.position_y))*0.3
-        velocity_correction = -(abs(self.velocity_x) + abs(self.velocity_y))*2
+        # Note: the terms are normalize to be in [-1,1] by using the threshold values.
+        # For the velocity correction a normalization remains to be implemented (TODO).
+        angle_correction    = -abs(self.current_angle) /self.threshold_angle
+        position_correction = -np.sqrt(abs(self.position_x) + abs(self.position_y)) /self.threshold_position
+        velocity_correction = -np.sqrt(abs(self.velocity_x) + abs(self.velocity_y))
 
-        return -200.0 if done else angle_correction + position_correction + velocity_correction
+        return -100.0 if done else 1 * angle_correction + 2* position_correction + 0.5* velocity_correction
