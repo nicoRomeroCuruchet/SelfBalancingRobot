@@ -5,13 +5,13 @@ import rospy
 import numpy as np
 from std_srvs.srv import Empty
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist
 from tf.transformations import euler_from_quaternion
 
-
 """
+https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html#tips-and-tricks-when-creating-a-custom-environment
 
-Best practices when creating a custom environment. https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html#tips-and-tricks-when-creating-a-custom-environment
+Best practices when creating a custom environment:
 
 1) always normalize your observation space when you can, i.e., when you know the boundaries. OK
 2) Normalize your action space and make it symmetric when continuous (cf potential issue below). OK
@@ -51,13 +51,11 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.reward_range      = (-float('inf'), float('inf'))
         self.action_space      = gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=float)
 
-
         """
         Observation space: 
-
         current_angle: -pi/2, +pi/2 (-1.5, 1.5) of the robot
         angular_y: not bounded
-        position_x : -1, 1
+        position_x: -1, 1
         position_y: -1, 1
         velocity_x: not bounded
         velocity_y: not bounded
@@ -88,7 +86,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.velocity_y = None
         # Angle thresholds angle expresed in radians and position in meters
         self.threshold_angle     = 0.2
-        self.threshold_position  = 0.1
+        self.threshold_position  = 0.5
 
         self.current_step = 0
         self.max_steps = max_timesteps_per_episode
@@ -130,14 +128,10 @@ class SelfBalancingRobotBaseLine(gym.Env):
             observation (numpy.ndarray): The observation of the environment.
             reward (float): The reward obtained from the action.
             done (bool): Whether the episode is done or not.
+            truncated (bool): Whether the episode is truncated or not.
             info (dict): Additional information about the step. """
 
-        
-        # For the time being, we will not be scaling the action.
-        # scaled_action = self.scale_action(action, 1.0)
-
         time1 = time.time()
-
         vel=Twist()
         vel.linear.x  = action
         vel.linear.y  = 0
@@ -148,7 +142,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.pub.publish(vel)
 
         # Check if time interval has passed
-        # the ground truth is published at 200 Hz. Check it in the robot.urdf file, in the sensors section.
+        # the ground truth is published at 200 Hz. 
+        # Check it in the robot.urdf file, in the sensors section.
         interval = time.time() - time1
         if(interval < self.time_interval):
             time.sleep(self.time_interval - interval)
@@ -160,10 +155,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
                abs(self.position_x)    > self.threshold_position or\
                abs(self.position_y)    > self.threshold_position 
 
-    
         self.current_step += 1
         truncated = self.current_step >= self.max_steps
-
         done = done or truncated
 
         if done:
@@ -175,35 +168,25 @@ class SelfBalancingRobotBaseLine(gym.Env):
                           self.position_x,    self.position_y,
                           self.velocity_x,    self.velocity_y], dtype=float), reward, done, truncated, {}
 
-    # We have normalized our action space to align with best practices, and if needed, we should re-scale it.
-    def scale_action(self, action, factor):
-        return factor * action
-
     def reset(self, **kwargs):
 
         """ Reset the environment.
 
         Returns:
             observation (numpy.ndarray): The initial observation of the environment. """
-
-       
-
+        
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
-
         self.current_angle = 0 
         self.angular_y     = 0
         self.position_x    = 0
         self.position_y    = 0
         self.velocity_x    = 0
         self.velocity_y    = 0
-        
         self.current_step = 0
         info = {}
-
-        return  np.array([0, 0,
-                          0, 0,
-                          0, 0], dtype=float), info
+        
+        return  np.array([0, 0,  0, 0, 0, 0], dtype=float), info
 
     def render(self):
         pass
@@ -211,12 +194,13 @@ class SelfBalancingRobotBaseLine(gym.Env):
     def get_reward(self):
 
         """
-        Calculate the reward based on the current_angle, position and velocity of the robot.
+        Calculate the reward based on the current_angle, position 
+        and velocity of the robot.
 
         Returns:
-            reward (float): The reward value based on the current angle.
+            reward (float): The reward value based on the current angle, position and velocity.
         """
-        # 
+
         done = abs(self.current_angle) > self.threshold_angle or\
                abs(self.position_x)    > self.threshold_position or\
                abs(self.position_y)    > self.threshold_position 
