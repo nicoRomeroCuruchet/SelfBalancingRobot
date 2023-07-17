@@ -1,121 +1,117 @@
 import sys
 import torch
-from ppo import PPO
-from arguments import get_args
-from network import FeedForwardNN
-from env import SelfBalancingRobot
-from eval_policy import eval_policy
-
-def train(env, hyperparameters, actor_model, critic_model):
-
-    """
-    Trains the model.
-
-    Parameters:
-        env - the environment to train on
-        hyperparameters - a dict of hyperparameters to use, defined in main
-        actor_model - the actor model to load in if we want to continue training
-        critic_model - the critic model to load in if we want to continue training
-
-    Return:
-        None
-    """ 
-
-    print(f"Training", flush=True)
-
-    # Create a model for PPO.
-    model = PPO(policy_class=FeedForwardNN, env=env, **hyperparameters)
-
-    # Tries to load in an existing actor/critic model to continue training on
-    if actor_model != '' and critic_model != '':
-        print(f"Loading in {actor_model} and {critic_model}...", flush=True)
-        model.actor.load_state_dict(torch.load(actor_model))
-        model.critic.load_state_dict(torch.load(critic_model))
-        print(f"Successfully loaded.", flush=True)
-    elif actor_model != '' or critic_model != '': # Don't train from scratch if user accidentally forgets actor/critic model
-        print(f"Error: Either specify both actor/critic models or none at all. We don't want to accidentally override anything!")
-        sys.exit(0)
-    else:
-        print(f"Training from scratch.", flush=True)
-
-    # Train the PPO model with a specified total timesteps
-    # NOTE: You can change the total timesteps here, I put a big number just because
-    # you can kill the process whenever you feel like PPO is converging
-    model.learn(total_timesteps=800_000_000)
-
-def test(env, actor_model):
-
-    """
-    Tests the model.
-
-    Parameters:
-        env - the environment to test the policy on
-        actor_model - the actor model to load in
-
-    Return:
-        None
-    """
-
-    print(f"Testing {actor_model}", flush=True)
-
-    # If the actor model is not specified, then exit
-    if actor_model == '':
-        print(f"Didn't specify model file. Exiting.", flush=True)
-        sys.exit(0)
-
-    # Extract out dimensions of observation and action spaces
-    obs_dim = env.observation_space.shape[0]
-    act_dim = env.action_space.shape[0]
-
-    # Build our policy the same way we build our actor model in PPO
-    policy = FeedForwardNN(obs_dim, act_dim)
-
-    # Load in the actor model saved by the PPO algorithm
-    policy.load_state_dict(torch.load(actor_model))
-
-    # Evaluate our policy with a separate module, eval_policy, to demonstrate
-    # that once we are done training the model/policy with ppo.py, we no longer need
-    # ppo.py since it only contains the training algorithm. The model/policy itself exists
-    # independently as a binary file that can be loaded in with torch.
-    eval_policy(policy=policy, env=env, render=True)
+import argparse
+from stable_baselines3 import PPO
+from env import SelfBalancingRobotBaseLine
+from stable_baselines3.ppo.policies import MlpPolicy
 
 def main(args):
 
-    """
-    The main function to run.
+    """ This function creates the environment, loads the model and trains or tests it. """
 
-    Parameters:
-        args - the arguments parsed from command line
-
-    Return:
-        None
-    """
-
-    # NOTE: Here's where you can set hyperparameters for PPO. I don't include them as part of
-    # ArgumentParser because it's too annoying to type them every time at command line. Instead, you can change them here.
-    # To see a list of hyperparameters, look in ppo.py at function _init_hyperparameters
-    hyperparameters = {
-                'timesteps_per_batch': 7048, 
-                'max_timesteps_per_episode': 3000, 
-                'gamma': 0.99, 
-                'n_updates_per_iteration': 10,
-                'lr': 3e-4, 
-                'clip': 0.2,
-                'render': False,
-                'render_every_i': 10
-              }
-
-    # Creates the environment we'll be running. If you want to replace with your own
-    # custom environment, note that it must inherit Gym and have both continuous
-    # observation and action spaces.
-    env = SelfBalancingRobot()
-
-    # Train or test, depending on the mode specified
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Device: ", device)
+    # Create the environment
+    env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=args.max_timesteps_per_episode)
+    
+    # Train the agent:
     if args.mode == 'train':
-        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model)
-    else:
-        test(env=env, actor_model=args.actor_model)
+        try:
+            # Loads already existing model
+            model = PPO.load(args.model, 
+                             env=env, 
+                             device=device)
+            print("Loading existing model " + args.model)
+        except:
+            # Model does not exist. Create a new one.
+            model = PPO(MlpPolicy, 
+                        env,  
+                        device=device,
+                        tensorboard_log=args.log)
+            print("Creating new model " + args.model + " and saving it after training")
+
+        # Train the agent
+        model.learn(total_timesteps=args.total_timesteps, progress_bar=True)
+        # Save the model
+        model.save(args.model)
+
+    # Test the agent:
+    elif args.mode == 'test':
+        # Loads already existing model
+        model = PPO.load(args.model, 
+                         env=env, 
+                         device=device)
+        print("Loading existing model " + args.model)
+        while True:
+            obs, _ = env.reset()
+            for i in range(args.max_timesteps_per_episode):
+                action, _ = model.predict(obs, deterministic=True)
+                obs, _, done, _, _ = env.step(action)
+                if done:
+                    print("Episode finished after {} timesteps".format(i+1))
+                    break
+
+
+def args_parse():
+
+     # Create the argument parser    
+    parser = argparse.ArgumentParser(description='Self balancing robot RL control')
+    # Add arguments
+    parser.add_argument('-d', '--mode',  type=str, help='can be train or test')
+    parser.add_argument('-m', '--max_timesteps_per_episode',  type=int, help='the maximum number of timesteps per episode')
+    parser.add_argument('-t', '--total_timesteps',  type=int, help='the total number of timesteps to train the agent')      
+    parser.add_argument('-o', '--model', type=str, help='define the model name, it can be a new model or an existing one')     
+    parser.add_argument('-g', '--log',   type=str, default='/log', help='define the log directory')    
+    parser.add_argument('-e', '--manual',  action="store_true", help='detailed explanation of the code')    
+    # Parse arguments    
+    args = parser.parse_args()
+   
+    if args.manual:
+        print("""
+              
+    Self balancing robot usage manual:
+              
+        * To test an existing model:
+            python3 main.py -d test -m 1000 -o /models/NN_MODEL
+        
+        where the arguments are:
+            
+            - test: is the mode.
+            - 1000: is the maximum number of timesteps per episode.
+            - /models/NN_MODEL: is the name of the model that will be loaded from the /models directory.
+        
+        * To train a new model:
+            python3 main.py -d train -m 1000 -t 1000000 -o /models/NEW_TRAINED_PPO_MODEL -g /log
+        
+        where the arguments are:
+              
+            - train: is the mode.
+            - 1000: is the maximum number of timesteps per episode.
+            - 1000000: is the total number of timesteps to train the agent.      
+            - /models/NEW_TRAINED_PPO_MODEL: is the name of the model that will be saved in the same directory where the script is running.
+            - /log: is the directory where the tensorboard log will be saved.
+              
+        * To train from an existing model:
+            python3 main.py -d train -m 1000 -t 1000000 -o models/PPO_MODEL -g /log
+        
+        where the arguments are:
+              
+            - train: is the mode.
+            - 1000: is the maximum number of timesteps per episode.
+            - 1000000: is the total number of timesteps to train the agent.      
+            - /models/PPO_MODEL: is the path of the model that will be load to continue training.
+            - /log: is the directory where the tensorboard log will be saved.
+
+        * hit cntrl+c to stop the training or testing.
+                                    
+        """)
+        
+        sys.exit()
+
+    return args
+
+
 
 if __name__ == '__main__':
-    args = get_args() # Parse arguments from command line
+    args = args_parse()
     main(args)
