@@ -21,14 +21,14 @@ def main(args):
             model = PPO.load(args.model, 
                              env=env, 
                              device=device)
-            print("Loading existing model " + args.model)
+            print("Loading existing model: " + args.model)
         except:
             # Model does not exist. Create a new one.
             model = PPO(MlpPolicy, 
                         env,  
                         device=device,
                         tensorboard_log=args.log)
-            print("Creating new model " + args.model + " and saving it after training")
+            print("Creating new model: " + args.model + " and saving it after training")
 
         # Train the agent
         model.learn(total_timesteps=args.total_timesteps, progress_bar=True)
