@@ -32,7 +32,9 @@ class SelfBalancingRobotBaseLine(gym.Env):
     Note:
         This class is designed to be used with the OpenAI Gym reinforcement learning framework. """
 
-    def __init__(self, max_timesteps_per_episode):
+    def __init__(self, max_timesteps_per_episode,
+                        threshold_angle=0.2,
+                        threshold_position=0.2):
 
         """ Initialize the SelfBalancingRobot environment. """
 
@@ -49,7 +51,7 @@ class SelfBalancingRobotBaseLine(gym.Env):
 
         # Set the gym environment parameters
         self.reward_range      = (-float('inf'), float('inf'))
-        self.action_space      = gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=float)
+        self.action_space      = gym.spaces.Box(low=-1, high=+1, shape=(1,), dtype=float)
 
         """
         Observation space: 
@@ -62,8 +64,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
         """
 
 
-        self.observation_space = gym.spaces.Box(low=np.array([-math.pi/2, -float('inf'), -1, -1, -float('inf'), -float('inf')]), 
-                                                high=np.array([math.pi/2,  float('inf'),  1,  1,  float('inf'),  float('inf')]), dtype=float)
+        self.observation_space = gym.spaces.Box(low=np.array([-math.pi/2, -float('inf'), -float('inf'), -1, -1, -float('inf'), -float('inf')]), 
+                                                high=np.array([math.pi/2, +float('inf'), +float('inf'),  1,  1, +float('inf'), +float('inf')]), dtype=float)
 
         # Create the environment and stop de the robot
         self.vel=Twist()
@@ -85,8 +87,11 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.velocity_x = None
         self.velocity_y = None
         # Angle thresholds angle expresed in radians and position in meters
-        self.threshold_angle     = 0.2
-        self.threshold_position  = 0.5
+        self.threshold_angle     = abs(threshold_angle)
+        self.threshold_position  = abs(threshold_position)
+
+        self.prev_action = 0
+        self.curr_action = 0
 
         self.current_step = 0
         self.max_steps = max_timesteps_per_episode
@@ -131,6 +136,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
             truncated (bool): Whether the episode is truncated or not.
             info (dict): Additional information about the step. """
 
+
+        # Take the action
         time1 = time.time()
         vel=Twist()
         vel.linear.x  = action
@@ -140,6 +147,9 @@ class SelfBalancingRobotBaseLine(gym.Env):
         vel.angular.y = 0
         vel.angular.z = 0
         self.pub.publish(vel)
+
+        self.prev_action = self.curr_action
+        self.curr_action = action
 
         # Check if time interval has passed
         # the ground truth is published at 200 Hz. 
@@ -151,9 +161,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
         reward = self.get_reward()
 
         # Check if the episode is done
-        done = abs(self.current_angle) > self.threshold_angle or\
-               abs(self.position_x)    > self.threshold_position or\
-               abs(self.position_y)    > self.threshold_position 
+        position_module = math.sqrt(self.position_x**2 + self.position_y**2)
+        done = abs(self.current_angle) > self.threshold_angle or position_module > self.threshold_position
 
         self.current_step += 1
         truncated = self.current_step >= self.max_steps
@@ -163,16 +172,22 @@ class SelfBalancingRobotBaseLine(gym.Env):
             vel.linear.x  = 0
             self.pub.publish(vel)
 
+        diff = float(self.curr_action - self.prev_action)
         # environment observation
-        return  np.array([self.current_angle, self.angular_y,
-                          self.position_x,    self.position_y,
-                          self.velocity_x,    self.velocity_y], dtype=float), reward, done, truncated, {}
+        return  np.array([self.current_angle, 
+                          self.angular_y,
+                          diff,
+                          self.position_x,
+                          self.position_y,
+                          self.velocity_x,    
+                          self.velocity_y], dtype=float), reward, done, truncated, {}
 
     def reset(self, **kwargs):
 
         """ Reset the environment.
 
         Returns:
+        
             observation (numpy.ndarray): The initial observation of the environment. """
         
         rospy.wait_for_service('/gazebo/reset_simulation')
@@ -184,9 +199,11 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.velocity_x    = 0
         self.velocity_y    = 0
         self.current_step = 0
+        self.prev_action = 0
+        self.curr_action = 0
         info = {}
         
-        return  np.array([0, 0,  0, 0, 0, 0], dtype=float), info
+        return  np.array([0, 0, 0, 0, 0, 0, 0], dtype=float), info
 
     def render(self):
         pass
@@ -194,19 +211,22 @@ class SelfBalancingRobotBaseLine(gym.Env):
     def get_reward(self):
 
         """
-        Calculate the reward based on the current_angle, position 
-        and velocity of the robot.
+        Calculate the reward.
 
         Returns:
-            reward (float): The reward value based on the current angle, position and velocity.
+            reward (float): The reward value based on the state of the robot.
         """
 
-        done = abs(self.current_angle) > self.threshold_angle or\
-               abs(self.position_x)    > self.threshold_position or\
-               abs(self.position_y)    > self.threshold_position 
+        angle_correction =  self.threshold_angle  - abs(self.current_angle) 
+        angle_rate       = abs(self.angular_y) 
+        position_module  = math.sqrt(self.position_x**2 + self.position_y**2)
+        velocity_module  = math.sqrt(self.velocity_x**2 + self.velocity_y**2)
+        smoothness       = abs(self.curr_action - self.prev_action)
 
-        angle_correction    =  2.0 - abs(self.current_angle) * 10
-        position_correction = -(abs(self.position_x) + abs(self.position_y))*0.3
-        velocity_correction = -(abs(self.velocity_x) + abs(self.velocity_y))*2
+        done = abs(self.current_angle) > self.threshold_angle or position_module > self.threshold_position
 
-        return -200.0 if done else angle_correction + position_correction + velocity_correction
+        weights = [100, -10, -100, -100, -1]
+        state   = [angle_correction, angle_rate, position_module, velocity_module, smoothness]
+        reward  = sum([weights[i]*state[i] for i in range(len(weights))])
+        
+        return -2500.0 if done else float(reward)
