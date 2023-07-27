@@ -1,12 +1,18 @@
-import gymnasium as gym
 import time
 import math
 import rospy
 import numpy as np
+import tkinter as tk
+import gymnasium as gym
 from std_srvs.srv import Empty
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from tf.transformations import euler_from_quaternion
+from gazebo_msgs.srv  import ApplyBodyWrenchRequest
+from gazebo_msgs.srv  import ApplyBodyWrench
+from gazebo_msgs.srv  import SetModelState
+from gazebo_msgs.msg import ModelState
+
 
 """
 https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html#tips-and-tricks-when-creating-a-custom-environment
@@ -34,7 +40,8 @@ class SelfBalancingRobotBaseLine(gym.Env):
 
     def __init__(self, max_timesteps_per_episode,
                         threshold_angle=0.2,
-                        threshold_position=0.2):
+                        threshold_position=0.2,
+                        apply_force=True):
 
         """ Initialize the SelfBalancingRobot environment. """
 
@@ -48,6 +55,9 @@ class SelfBalancingRobotBaseLine(gym.Env):
         self.sub_ground              = rospy.Subscriber('/self_balancing_robot/ground_truth/state', Odometry, self.ground_truth_callback)
         # Create the service to reset the simulation
         self.reset_simulation_client = rospy.ServiceProxy('/gazebo/reset_simulation',Empty)
+        # model state
+        self.set_model_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+
 
         # Set the gym environment parameters
         self.reward_range      = (-float('inf'), float('inf'))
@@ -92,12 +102,11 @@ class SelfBalancingRobotBaseLine(gym.Env):
 
         self.prev_action = 0
         self.curr_action = 0
+        self.aplly_force = apply_force
 
         self.current_step = 0
         self.max_steps = max_timesteps_per_episode
-
-
-
+        
     def ground_truth_callback(self, msg):
 
         """ Callback function for ground truth data.
@@ -121,6 +130,32 @@ class SelfBalancingRobotBaseLine(gym.Env):
                                                           q.y, 
                                                           q.z, 
                                                           q.w])
+        
+    
+    def __apply_force_to_link__(self, link_name, force, duration):
+
+        """ Apply a force to a link in the simulation.  
+        
+        Args:  
+            link_name (str): The name of the link to apply the force to.
+            force (list): The force to apply to the link.
+            duration (float): The duration of the force.
+        
+        Returns:
+            response (bool): Whether the force was applied or not.
+        """
+
+        rospy.wait_for_service('/gazebo/apply_body_wrench')
+        apply_wrench = rospy.ServiceProxy('/gazebo/apply_body_wrench', ApplyBodyWrench)
+        request = ApplyBodyWrenchRequest()
+        request.body_name = link_name
+        request.wrench.force.x = force[0]
+        request.wrench.force.y = force[1]
+        request.wrench.force.z = force[2]
+        request.duration = rospy.Duration(duration)
+        response = apply_wrench(request)
+
+        return response.success
 
     def step(self, action):
 
@@ -135,7 +170,6 @@ class SelfBalancingRobotBaseLine(gym.Env):
             done (bool): Whether the episode is done or not.
             truncated (bool): Whether the episode is truncated or not.
             info (dict): Additional information about the step. """
-
 
         # Take the action
         time1 = time.time()
@@ -162,11 +196,17 @@ class SelfBalancingRobotBaseLine(gym.Env):
 
         # Check if the episode is done
         position_module = math.sqrt(self.position_x**2 + self.position_y**2)
-        done = abs(self.current_angle) > self.threshold_angle or position_module > self.threshold_position
+        done = (abs(self.current_angle) > self.threshold_angle) or (position_module > self.threshold_position)
 
         self.current_step += 1
         truncated = self.current_step >= self.max_steps
         done = done or truncated
+
+        # Apply random force to the robot every n steps
+        if self.current_step % 100 == 0 and self.aplly_force:
+            # calculate ramdom number between -1 and 1
+            random_force = np.random.uniform(-2, 2)
+            self.__apply_force_to_link__("self_balancing_robot::base_link", [random_force, 0, 0], 0.1)
 
         if done:
             vel.linear.x  = 0
@@ -189,18 +229,32 @@ class SelfBalancingRobotBaseLine(gym.Env):
         Returns:
         
             observation (numpy.ndarray): The initial observation of the environment. """
-        
+
         rospy.wait_for_service('/gazebo/reset_simulation')
         self.reset_simulation_client()
+        time.sleep(0.1)
+        # Wait for the environment to reset
+        #x_pos =  np.random.uniform(-self.threshold_position, self.threshold_position)
+        #model_state = ModelState()
+        #model_state.model_name = 'self_balancing_robot'
+        #model_state.pose.position.x = x_pos
+        #model_state.pose.position.y = 0
+        #model_state.pose.position.z = 0.145
+        #model_state.pose.orientation.x = 0
+        #model_state.pose.orientation.y = 0
+        #model_state.pose.orientation.z = 0
+        #model_state.pose.orientation.w = 1        
+        #self.set_model_state(model_state)
+
         self.current_angle = 0 
         self.angular_y     = 0
         self.position_x    = 0
         self.position_y    = 0
         self.velocity_x    = 0
         self.velocity_y    = 0
-        self.current_step = 0
-        self.prev_action = 0
-        self.curr_action = 0
+        self.current_step  = 0
+        self.prev_action   = 0
+        self.curr_action   = 0
         info = {}
         
         return  np.array([0, 0, 0, 0, 0, 0, 0], dtype=float), info
@@ -218,15 +272,16 @@ class SelfBalancingRobotBaseLine(gym.Env):
         """
 
         angle_correction =  self.threshold_angle  - abs(self.current_angle) 
-        angle_rate       = abs(self.angular_y) 
-        position_module  = math.sqrt(self.position_x**2 + self.position_y**2)
-        velocity_module  = math.sqrt(self.velocity_x**2 + self.velocity_y**2)
-        smoothness       = abs(self.curr_action - self.prev_action)
+        angle_rate       = -abs(self.angular_y)                                
+        position_module  = -(self.position_x**2 + self.position_y**2)          
+        velocity_module  = -math.sqrt(self.velocity_x**2 + self.velocity_y**2) 
+        smoothness       = -abs(self.curr_action - self.prev_action)           
 
-        done = abs(self.current_angle) > self.threshold_angle or position_module > self.threshold_position
+        done = (abs(self.current_angle) > self.threshold_angle) or (position_module > self.threshold_position)
 
-        weights = [100, -10, -100, -100, -1]
+        weights = [10, 0.2, .1, 0, 0.1]
         state   = [angle_correction, angle_rate, position_module, velocity_module, smoothness]
         reward  = sum([weights[i]*state[i] for i in range(len(weights))])
         
-        return -2500.0 if done else float(reward)
+        return -200.0 if done else float(reward)
+    

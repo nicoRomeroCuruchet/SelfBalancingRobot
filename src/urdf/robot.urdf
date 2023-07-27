@@ -194,8 +194,8 @@
   <gazebo>
     <plugin filename="libgazebo_ros_diff_drive.so" name="differential_drive_controller">
       <legacyMode>false</legacyMode>
-	  <alwaysOn>true</alwaysOn>
-	  <max_velocity>10</max_velocity>
+	    <alwaysOn>true</alwaysOn>
+	    <max_velocity>10</max_velocity>
       <updateRate>200</updateRate>
       <leftJoint>wheel_dx_joint</leftJoint>
       <rightJoint>wheel_sx_joint</rightJoint>
