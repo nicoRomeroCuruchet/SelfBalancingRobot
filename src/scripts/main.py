@@ -19,7 +19,9 @@ def main(args):
         # Create the environment
         env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=args.max_timesteps_per_episode,
                                          threshold_angle=0.2,
-                                         threshold_position=0.2)
+                                         threshold_position=0.5,
+                                         apply_force=False)
+        
         env = Monitor(env, filename="logs", allow_early_resets=True)
         env = DummyVecEnv([lambda: env])
 
@@ -45,11 +47,14 @@ def main(args):
         model.save(args.model)
 
     # Test the agent:
+    
     elif args.mode == 'test':
-
+        import time
+        import numpy as np
         env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=args.max_timesteps_per_episode,
-                                         threshold_angle=1.5,
-                                         threshold_position=1e+8)
+                                         threshold_angle=1,
+                                         threshold_position=1e+8,
+                                         apply_force=False)
         
         env = Monitor(env, filename="logs", allow_early_resets=True)
         env = DummyVecEnv([lambda: env])
@@ -63,9 +68,11 @@ def main(args):
             obs = env.reset()
             total_reward = 0
             for i in range(args.max_timesteps_per_episode):
-                action, _ = model.predict(obs, deterministic=True)
-                obs, reward, done, _ = env.step(action)
+                action, _ = model.predict(obs, deterministic=False)
+                obs, reward, done, _ = env.step(np.round(action,2))
                 total_reward += reward
+                print(float(action))
+                time.sleep(0.02)
                 if done:
                     print("Episode finished after {} timesteps".format(i+1))
                     print("Total reward: ", total_reward)
