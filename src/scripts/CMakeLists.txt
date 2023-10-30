@@ -8,8 +8,6 @@ find_package(catkin REQUIRED COMPONENTS roscpp
                                         tf2 
                                         sensor_msgs)
 
-add_executable(robot_env main.cpp env.cpp)
-target_link_libraries(robot_env ${catkin_LIBRARIES})
+add_executable(server_env server.cpp env.cpp)
+target_link_libraries(server_env ${catkin_LIBRARIES})
 include_directories(${catkin_INCLUDE_DIRS})
-
-#set_property(TARGET robot_env PROPERTY CXX_STANDARD 17)
