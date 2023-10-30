@@ -3,11 +3,7 @@
   <name>self_balancing_robot</name>
   <version>1.0.0</version>
   <description>The self_balancing_robot package</description>
-
   <maintainer email="nico.romerocuruchet@gmail.com">nico</maintainer>
-
   <license>MIT</license>
-
   <buildtool_depend>catkin</buildtool_depend>
-
 </package>

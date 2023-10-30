@@ -156,8 +156,8 @@ def args_parse():
     parser.add_argument('-m', '--max_timesteps_per_episode',  type=int, help='the maximum number of timesteps per episode')
     parser.add_argument('-t', '--total_timesteps',  type=int, help='the total number of timesteps to train the agent')      
     parser.add_argument('-o', '--model', type=str, help='define the model name, it can be a new model or an existing one')     
-    parser.add_argument('-g', '--log',   type=str, default='log', help='define the log directory')    
-    parser.add_argument('-e', '--manual',  action="store_true", help='detailed explanation of the code')    
+    parser.add_argument('-e', '--manual',  action="store_true", help='detailed explanation of the code') 
+    #parser.add_argument('-g', '--log',   type=str, default='log', help='define the log directory')    
     # Parse arguments    
     args = parser.parse_args()
 
@@ -175,7 +175,7 @@ def args_parse():
             - models/NN_MODEL: is the name of the model that will be loaded from the /models directory.
         
         * To train a new model:
-            python3 main.py -d train -m 1000 -t 1000000 -o models/NEW_TRAINED_PPO_MODEL -g log
+            python3 main.py -d train -m 1000 -t 1000000 -o models/NEW_TRAINED_PPO_MODEL 
         
         where the arguments are:
               
@@ -186,7 +186,7 @@ def args_parse():
             - log: is the directory where the tensorboard log will be saved.
               
         * To train from an existing model:
-            python3 main.py -d train -m 1000 -t 1000000 -o models/PPO_MODEL -g /log
+            python3 main.py -d train -m 1000 -t 1000000 -o models/PPO_MODEL
         
         where the arguments are:
               
