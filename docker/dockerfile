@@ -7,8 +7,8 @@ ros-noetic-ros-controllers && python3 -m pip install torch gymnasium stable-base
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 
 # Check the last version in the repo:
-ADD https://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:x-oauth-basic@api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
-RUN cd ~ && git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+ADD https://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:x-oauth-basic@api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
+RUN cd ~ && git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
 # Compile the robot enviroment
 RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; cd root/SelfBalancingRobot; catkin_make'
 RUN echo "source  root/SelfBalancingRobot/devel/setup.bash" >> ~/.bashrc
