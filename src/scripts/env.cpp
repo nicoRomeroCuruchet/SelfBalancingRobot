@@ -1,7 +1,12 @@
 #include "env.h"
 #include <std_srvs/Empty.h>
 
-
+/**
+ * @brief Constructor for the SelfBalancingRobotEnv class.
+ * 
+ * @param nh The ROS node handle.
+ * @param r The ROS rate.
+ */
 SelfBalancingRobotEnv::SelfBalancingRobotEnv(ros::NodeHandle& nh, ros::Rate& r):rate(r)
 {
     // ground truth of the base link
@@ -18,11 +23,13 @@ SelfBalancingRobotEnv::SelfBalancingRobotEnv(ros::NodeHandle& nh, ros::Rate& r):
 }
 
 /**
- * Callback function for the ground truth of the base link
+ * @brief Callback function for the ground truth base link odometry message.
  * 
- * @param msg containing the ground truth of the base link
-*/
-
+ * This function is called whenever a new ground truth base link odometry message is received.
+ * The message contains information about the robot's position and orientation in the world.
+ * 
+ * @param msg The incoming ground truth base link odometry message.
+ */
 void SelfBalancingRobotEnv::groundTruthBaseLinkCallback(const nav_msgs::Odometry::ConstPtr& msg)
 {
     // Position of the robot
@@ -42,11 +49,10 @@ void SelfBalancingRobotEnv::groundTruthBaseLinkCallback(const nav_msgs::Odometry
 }
 
 /**
- * Step function for the environment
- * 
- * @return state of the environment
-*/
-
+ * Takes a step in the environment using the given action.
+ * @param action The action to take in the environment.
+ * @return A shared pointer to a vector of floats representing the new state of the environment.
+ */
 std::shared_ptr<std::vector<float>> SelfBalancingRobotEnv::step(std::vector<float>& action) 
 {
     //unpause physics:

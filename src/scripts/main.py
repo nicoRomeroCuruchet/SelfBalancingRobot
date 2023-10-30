@@ -1,87 +1,155 @@
+import os
 import sys
 import torch
 import argparse
+import mimetypes
+from icecream import ic
+from loguru import logger
 from stable_baselines3 import PPO
 from env import SelfBalancingRobotBaseLine
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.ppo.policies import MlpPolicy
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from stable_baselines3.common.callbacks import CheckpointCallback
 
-def main(args):
+def trainner(args)->None:
 
-    """ This function creates the environment, loads the model and trains or tests it. """
+    """ Trains the robot agent using the Proximal Policy Optimization (PPO) algorithm.
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Device: ", device)
+    Args:
+        args: A Namespace object containing the command-line arguments.
 
-    # Train the agent:
-    if args.mode == 'train':
-        # Create the environment
-        env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=args.max_timesteps_per_episode,
-                                         threshold_angle=0.2,
-                                         threshold_position=0.5,
-                                         apply_force=False)
-        
-        env = Monitor(env, filename="logs", allow_early_resets=True)
-        env = DummyVecEnv([lambda: env])
-
-        try:
-            # Loads already existing model
-            model = PPO.load(args.model, 
-                             env=env,
-                             verbose=1, 
-                             device=device)
-            print("Loading existing model: " + args.model)
-        except:
-            # Model does not exist. Create a new one.
-            model = PPO(MlpPolicy, 
-                        env,  
-                        device=device,
-                        verbose=1,
-                        tensorboard_log=args.log)
-            print("Creating new model: " + args.model + " and saving it after training")
-
-        # Train the agent
-        model.learn(total_timesteps=args.total_timesteps, progress_bar=True)
-        # Save the model
-        model.save(args.model)
-
-    # Test the agent:
+    Returns:
+        None
+    """
     
-    elif args.mode == 'test':
-        import time
-        import numpy as np
-        env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=args.max_timesteps_per_episode,
-                                         threshold_angle=1,
-                                         threshold_position=1e+8,
-                                         apply_force=False)
-        
-        env = Monitor(env, filename="logs", allow_early_resets=True)
-        env = DummyVecEnv([lambda: env])
+    logger.add(sys.stderr, format="{time} {level} {message}", filter="my_module", level="INFO")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.info("Using {} for training".format(device))
+    
+     # Create the environment
+    env = SelfBalancingRobotBaseLine(max_timesteps_per_episode=args.max_timesteps_per_episode,
+                                     threshold_angle=0.4,
+                                     threshold_position=1.0)
+    logger.info("Total timesteps to learn: {}".format(args.total_timesteps), )
+    # Train the agent:
+   
+    env = Monitor(env, filename="logs", allow_early_resets=True)
+    vec_env = DummyVecEnv([lambda: env])
 
+    try:
+        directory = args.model 
+        file_types = lambda x: mimetypes.guess_type(x)[0] if mimetypes.guess_type(x)[0] != None else 'application/pkl'
+        models = dict([(file_types(f),str(directory+'/'+f)) for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))])        
+        params = {}
+        hyperparams = models['text/plain'] if 'text/plain' in models else None
+        with open(hyperparams, 'r') as file:
+            for line in file:
+                key, value = line.split('=')
+                params[key.strip()] = float(value)
+
+        lf = float(params['learning_rate'])
+        n_steps = int(params['n_steps'])
+        batch_size = int(params['batch_size'])
+
+        logger.info("Loaded hyperparameters from: " + models['text/plain'])
+        logger.info("Learning rate: " + str(lf))
+        logger.info("n_steps: " + str(n_steps))
+        logger.info("batch_size: " + str(batch_size))
+
+    except Exception as e:
+        logger.error("Error reading parameters from file")
+        
+    # 
+    try:    
+        vec_env = VecNormalize.load(models['application/pkl'], vec_env)
         # Loads already existing model
-        model = PPO.load(args.model, 
-                         env=env, 
-                         device=device)
-        print("Loading existing model " + args.model)
-        while True:
-            obs = env.reset()
-            total_reward = 0
-            for i in range(args.max_timesteps_per_episode):
-                action, _ = model.predict(obs, deterministic=False)
-                obs, reward, done, _ = env.step(np.round(action,2))
-                total_reward += reward
-                print(float(action))
-                time.sleep(0.02)
-                if done:
-                    print("Episode finished after {} timesteps".format(i+1))
-                    print("Total reward: ", total_reward)
-                    break
+        model = PPO.load(path=models['application/zip'],
+                            env=vec_env, 
+                            device=device, 
+                            learning_rate=lf,
+                            n_steps=n_steps,     
+                            batch_size=batch_size,
+                            verbose=True)
+        
+        logger.info("Loaded model from: " + args.model)
+    except:  
+        vec_env = VecNormalize(vec_env, 
+                                norm_obs = True, 
+                                norm_reward = True)
+        # Model does not exist. Create a new one.
+        model = PPO("MlpPolicy", 
+                    env=vec_env, 
+                    device=device, 
+                    learning_rate=1e-3,
+                    n_steps=500,     
+                    batch_size=250,
+                    tensorboard_log="./log/",)
+        logger.info("Creating new model: " + args.model + " and saving it after training")
+        logger.warning("Defaults parameters:")
+        logger.warning("Learning rate: " + str(1e-3))
+        logger.warning("n_steps: " + str(500))
+        logger.warning("batch_size: " + str(250))
+
+    # CALLBACKS: Save a checkpoint every 2k steps
+    checkpoint_callback = CheckpointCallback(
+    save_freq=2000,
+    save_path=args.model,
+    name_prefix="rl_model",
+    save_replay_buffer=True,
+    save_vecnormalize=True)
+    # Train the agent
+    model.learn(total_timesteps=args.total_timesteps, progress_bar=True,callback=[checkpoint_callback])
+
+def tester(args)->None:
+
+    """
+    Test the agent using an already trained model and a pre-defined environment.
+
+    Args:
+        args (argparse.Namespace): Command line arguments.
+
+    Returns:
+        None
+    """
+
+    logger.add(sys.stderr, format="{time} {level} {message}", filter="my_module", level="INFO")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.info("Using {} for testing the agent".format(device))
+    # Create the environment
+    vec_env = Monitor(SelfBalancingRobotBaseLine(max_timesteps_per_episode=args.max_timesteps_per_episode,
+                                                 threshold_angle=0.4,
+                                                 threshold_position=1.0) , 
+                                                 filename="logs", allow_early_resets=True)        
+    vec_env = DummyVecEnv([lambda: vec_env])
+    vec_env = VecNormalize.load("balancing_robot_statistics.pkl", vec_env)
+
+    # Loads already existing model
+    model = PPO.load("balancing_robot_weights.zip", 
+                        env=vec_env, 
+                        device=device)
+    print("Testing Policy: Loading existing model " + "balancing_robot_weights.zip")
+    while True:
+        total_reward = 0
+        obs = vec_env.reset()
+        for i in range(args.max_timesteps_per_episode):
+            action, _ = model.predict(obs, deterministic=True)
+            #print("Send action: ", action)
+            obs, reward, done, _ = vec_env.step(action)
+            total_reward += reward
+            if done:
+                print("Episode finished after {} timesteps".format(i+1))
+                print("Total reward: ", total_reward)
+                break
 
 
 def args_parse():
+    """
+    Parses command line arguments for the self balancing robot RL control script.
 
-     # Create the argument parser    
+    Returns:
+        args (argparse.Namespace): The parsed command line arguments.
+    """
+    # Create the argument parser    
     parser = argparse.ArgumentParser(description='Self balancing robot RL control')
     # Add arguments
     parser.add_argument('-d', '--mode',  type=str, help='can be train or test')
@@ -92,11 +160,10 @@ def args_parse():
     parser.add_argument('-e', '--manual',  action="store_true", help='detailed explanation of the code')    
     # Parse arguments    
     args = parser.parse_args()
-   
+
     if args.manual:
-        print("""
-              
-    Self balancing robot usage manual:
+        
+        print("""Self balancing robot usage manual:
               
         * To test an existing model:
             python3 main.py -d test -m 1000 -o models/NN_MODEL
@@ -138,7 +205,13 @@ def args_parse():
     return args
 
 
-
 if __name__ == '__main__':
+
     args = args_parse()
-    main(args)
+    if args.mode == 'train':
+        trainner(args)
+    elif args.mode == 'test':
+        tester(args)
+    else:
+        logger.error("Invalid mode: " + args.mode)
+
