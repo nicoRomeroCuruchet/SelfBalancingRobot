@@ -61,6 +61,7 @@ def trainner(args)->None:
         
     # 
     try:    
+        
         vec_env = VecNormalize.load(models['application/pkl'], vec_env)
         # Loads already existing model
         model = PPO.load(path=models['application/zip'],
@@ -73,10 +74,11 @@ def trainner(args)->None:
                             tensorboard_log="./log/")
         
         logger.info("Loaded model from: " + args.model)
+        
     except:  
 
         #defaults
-        learning_rate=1e-4
+        learning_rate=1e-3
         n_steps=50
         batch_size=15
         
