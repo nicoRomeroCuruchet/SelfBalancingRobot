@@ -79,8 +79,8 @@ def trainner(args)->None:
 
         #defaults
         learning_rate=1e-4
-        n_steps=100
-        batch_size=25
+        n_steps=2048
+        batch_size=64
         
         vec_env = VecNormalize(vec_env, 
                                 norm_obs = True, 
