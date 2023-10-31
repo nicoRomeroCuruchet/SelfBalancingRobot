@@ -74,6 +74,12 @@ def trainner(args)->None:
         
         logger.info("Loaded model from: " + args.model)
     except:  
+
+        #defaults
+        learning_rate=1e-4
+        n_steps=50
+        batch_size=15
+        
         vec_env = VecNormalize(vec_env, 
                                 norm_obs = True, 
                                 norm_reward = True)
@@ -81,17 +87,17 @@ def trainner(args)->None:
         model = PPO("MlpPolicy", 
                     env=vec_env, 
                     device=device, 
-                    learning_rate=1e-3,
-                    n_steps=500,     
-                    batch_size=250,
+                    learning_rate=learning_rate,
+                    n_steps=n_steps,     
+                    batch_size=batch_size,
                     verbose=True,
                     tensorboard_log="./log/")
         
         logger.info("Creating new model: " + args.model + " and saving it after training")
         logger.warning("Defaults parameters:")
-        logger.warning("Learning rate: " + str(1e-3))
-        logger.warning("n_steps: " + str(500))
-        logger.warning("batch_size: " + str(250))
+        logger.warning("Learning rate: " + str(learning_rate))
+        logger.warning("n_steps: " + str(n_steps))
+        logger.warning("batch_size: " + str(batch_size))
 
     # CALLBACKS: Save a checkpoint every 2k steps
     checkpoint_callback = CheckpointCallback(
