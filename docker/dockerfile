@@ -5,17 +5,16 @@ RUN apt-get update && apt-get install -y apt-utils git python3-rosdep python3-ro
 build-essential ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control python3.pip ros-noetic-ros-control \
 ros-noetic-ros-controllers && python3 -m pip install torch gymnasium stable-baselines3[extra] tensorboardX
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+RUN pip install icecream loguru
 # Check the last version in the repo:
-ADD https://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:x-oauth-basic@api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
-RUN git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+ADD https://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:x-oauth-basic@api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
+RUN git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
 # Compile the robot enviroment
 RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; cd /SelfBalancingRobot; catkin_make'
 RUN echo "source  /SelfBalancingRobot/devel/setup.bash" >> ~/.bashrc
 # Compile the server
 RUN /bin/bash -c "mkdir /SelfBalancingRobot/src/scripts/build;"
 RUN /bin/bash -c ". /opt/ros/noetic/setup.bash; cd SelfBalancingRobot/src/scripts/build; cmake ..; make"
-
-RUN pip install icecream loguru
 
 RUN echo "#!/bin/bash" > /ros_launch.sh && \
     echo "source /opt/ros/noetic/setup.bash" >> /ros_launch.sh && \
