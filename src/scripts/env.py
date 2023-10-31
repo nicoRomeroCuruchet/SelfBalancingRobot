@@ -164,4 +164,5 @@ class SelfBalancingRobotBaseLine(gym.Env):
         """ 
         abs_angle = abs(self.current_angle)
         abs_position = abs(self.position_x)
-        return 2.0*(1-np.sin(abs_angle)) - 0.25*(abs_position / 0.5)  
+        abs_angular_rate = abs(self.angular_y)
+        return 2.0*(1-np.sin(abs_angle)) - 0.5*abs_angular_rate - 0.25*(abs_position / self.threshold_angle ) 
