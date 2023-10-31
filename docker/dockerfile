@@ -5,26 +5,27 @@ RUN apt-get update && apt-get install -y apt-utils git python3-rosdep python3-ro
 build-essential ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control python3.pip ros-noetic-ros-control \
 ros-noetic-ros-controllers && python3 -m pip install torch gymnasium stable-baselines3[extra] tensorboardX
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-
 # Check the last version in the repo:
 ADD https://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:x-oauth-basic@api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
-RUN cd ~ && git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+RUN git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
 # Compile the robot enviroment
-RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; cd root/SelfBalancingRobot; catkin_make'
-RUN echo "source  root/SelfBalancingRobot/devel/setup.bash" >> ~/.bashrc
+RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; cd /SelfBalancingRobot; catkin_make'
+RUN echo "source  /SelfBalancingRobot/devel/setup.bash" >> ~/.bashrc
 # Compile the server
-RUN /bin/bash -c "mkdir root/SelfBalancingRobot/src/scripts/env_cpp/build;"
-RUN /bin/bash -c ". /opt/ros/noetic/setup.bash; cd root/SelfBalancingRobot/src/scripts/env_cpp/build; cmake ..; make"
+RUN /bin/bash -c "mkdir /SelfBalancingRobot/src/scripts/build;"
+RUN /bin/bash -c ". /opt/ros/noetic/setup.bash; cd SelfBalancingRobot/src/scripts/build; cmake ..; make"
 
+RUN pip install icecream loguru
 
-#RUN echo "#!/bin/bash \n\
-#    source /opt/ros/noetic/setup.bash \n\
-#    roslaunch self_balancing_robot main.launch & \n\
-#    sleep 5 & \n\
-#    ./root/SelfBalancingRobot/src/scripts/env_cpp/build/robot_env &" > /ros_launch.sh && \
-#    chmod +x /ros_launch.sh
+RUN echo "#!/bin/bash" > /ros_launch.sh && \
+    echo "source /opt/ros/noetic/setup.bash" >> /ros_launch.sh && \
+    echo "source /SelfBalancingRobot/devel/setup.bash" >> /ros_launch.sh && \
+    echo "roslaunch self_balancing_robot main.launch gui:=false &" >> /ros_launch.sh && \
+    echo "./SelfBalancingRobot/src/scripts/build/server_env &" >> /ros_launch.sh && \ 
+    echo "bash" >> /ros_launch.sh 
 
-#RUN /bin/bash -c 'sh ros_launch.sh'
+RUN chmod +x /ros_launch.sh
+
 #################################################################################################################################################
 # BUILD AND RUN:                                                                                                                                #
 # sudo docker build -t ros_noetic .                                                                                                             #
