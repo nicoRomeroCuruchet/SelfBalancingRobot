@@ -78,7 +78,7 @@ def trainner(args)->None:
     except:  
 
         #defaults
-        learning_rate=1e-3
+        learning_rate=1e-4
         n_steps=50
         batch_size=15
         
