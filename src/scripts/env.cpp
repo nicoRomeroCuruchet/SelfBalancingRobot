@@ -19,7 +19,7 @@ SelfBalancingRobotEnv::SelfBalancingRobotEnv(ros::NodeHandle& nh, ros::Rate& r):
     pauseClient   = nh.serviceClient<std_srvs::Empty>("/gazebo/pause_physics");
     unpauseClient = nh.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
     // Reset the simulation
-    ROS_INFO("Environment initialized");
+    ROS_INFO("Server Environment initialized");
 }
 
 /**
