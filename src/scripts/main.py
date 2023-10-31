@@ -69,7 +69,8 @@ def trainner(args)->None:
                             learning_rate=lf,
                             n_steps=n_steps,     
                             batch_size=batch_size,
-                            verbose=True)
+                            verbose=True,
+                            tensorboard_log="./log/")
         
         logger.info("Loaded model from: " + args.model)
     except:  
@@ -83,7 +84,9 @@ def trainner(args)->None:
                     learning_rate=1e-3,
                     n_steps=500,     
                     batch_size=250,
-                    tensorboard_log="./log/",)
+                    verbose=True,
+                    tensorboard_log="./log/")
+        
         logger.info("Creating new model: " + args.model + " and saving it after training")
         logger.warning("Defaults parameters:")
         logger.warning("Learning rate: " + str(1e-3))
