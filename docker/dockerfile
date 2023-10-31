@@ -6,8 +6,8 @@ build-essential ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control python3
 ros-noetic-ros-controllers && python3 -m pip install torch gymnasium stable-baselines3[extra] tensorboardX
 RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 # Check the last version in the repo:
-ADD https://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:x-oauth-basic@api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
-RUN git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+ADD https://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:x-oauth-basic@api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
+RUN git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
 # Compile the robot enviroment
 RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; cd /SelfBalancingRobot; catkin_make'
 RUN echo "source  /SelfBalancingRobot/devel/setup.bash" >> ~/.bashrc
@@ -21,6 +21,7 @@ RUN echo "#!/bin/bash" > /ros_launch.sh && \
     echo "source /opt/ros/noetic/setup.bash" >> /ros_launch.sh && \
     echo "source /SelfBalancingRobot/devel/setup.bash" >> /ros_launch.sh && \
     echo "roslaunch self_balancing_robot main.launch gui:=false &" >> /ros_launch.sh && \
+    echo "sleep 5" >> /ros_launch.sh && \
     echo "./SelfBalancingRobot/src/scripts/build/server_env &" >> /ros_launch.sh && \ 
     echo "bash" >> /ros_launch.sh 
 
@@ -30,7 +31,7 @@ RUN chmod +x /ros_launch.sh
 # BUILD AND RUN:                                                                                                                                #
 # sudo docker build -t ros_noetic .                                                                                                             #
 # sudo docker run --gpus all -i -v $(home)/runs:/phantomx/src/phantomx_training/scripts/runs -e prefix=server -t ros_noetic #
-# sudo docker run --rm --name ros_noetic --gpus all -i -t ros_noetic bash #
+# sudo docker run --rm --name ros_noetic --gpus all -i -t ros_noetic /ros_launch.sh #
 #################################################################################################################################################
 
 #################################################################################################################################################
