@@ -1,6 +1,6 @@
 # PPO for Self-Balancing Robot Control with ROS/Gazebo
 
-This repository contains the implementation of the Proximal Policy Optimization (PPO) algorithm applied to control a self-balancing robot simulated in the ROS (Robot Operating System) and Gazebo simulation environment. The PPO algorithm code has been developed from scratch using PyTorch by Eric Yang Yu.
+This repository contains the implementation of the Proximal Policy Optimization (PPO) algorithm applied to control a self-balancing robot simulated in the ROS (Robot Operating System) and Gazebo simulation environment.
 
 # Overview
 
