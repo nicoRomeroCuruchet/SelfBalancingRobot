@@ -8,7 +8,7 @@ RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
 RUN pip install icecream loguru
 # Check the last version in the repo:
 ADD https://api.github.com/repos/nicoRomeroCuruchet/SelfBalancingRobot/git/refs/heads/main version.json
-RUN git clone -b main https://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@github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
+RUN git clone -b main https://github.com/nicoRomeroCuruchet/SelfBalancingRobot.git
 # Compile the robot enviroment
 RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; cd /SelfBalancingRobot; catkin_make'
 RUN echo "source  /SelfBalancingRobot/devel/setup.bash" >> ~/.bashrc
